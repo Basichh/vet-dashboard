@@ -1,3 +1,18 @@
+// Global error handler for debugging
+window.addEventListener('error', function(e) {
+  console.error('🚨 JavaScript Error:', e.error);
+  console.error('🚨 Error message:', e.message);
+  console.error('🚨 Error location:', e.filename + ':' + e.lineno);
+});
+
+// Debug function availability
+window.addEventListener('load', function() {
+  console.log('🔍 Checking function availability...');
+  console.log('🔍 addVisitor function:', typeof window.addVisitor);
+  console.log('🔍 saveVisitors function:', typeof window.saveVisitors);
+  console.log('🔍 getVisitors function:', typeof window.getVisitors);
+});
+
 // Sound alert function
 function playAlert() {
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -16,8 +31,40 @@ function playAlert() {
   oscillator.stop(audioContext.currentTime + 0.5);
 }
 
+// Startup sync function
+function performStartupSync() {
+  const localData = JSON.parse(localStorage.getItem("visitors") || "[]");
+  
+  if (localData.length > 0) {
+    console.log('🔄 Checking if localStorage sync needed...');
+    
+    // Send localStorage data to server for sync check
+    fetch('/api/sync-localStorage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(localData)
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.status === 'synced') {
+        console.log('✅ Startup sync completed:', result.message);
+      } else {
+        console.log('ℹ️ No sync needed:', result.message);
+      }
+    })
+    .catch(error => {
+      console.warn('⚠️ Startup sync failed:', error);
+    });
+  } else {
+    console.log('ℹ️ No localStorage data to sync');
+  }
+}
+
 function init() {
   const hash = window.location.hash;
+
+  // Perform startup sync first
+  performStartupSync();
 
   if (hash === "#display") {
     renderDisplay();
@@ -28,11 +75,48 @@ function init() {
 }
 
 function getVisitors() {
-  return JSON.parse(localStorage.getItem("visitors") || "[]");
+  // Always try server first, fallback to localStorage
+  return fetch('/api/visitors')
+    .then(response => response.json())
+    .then(serverData => {
+      // Keep localStorage in sync with server data
+      localStorage.setItem("visitors", JSON.stringify(serverData));
+      return serverData;
+    })
+    .catch(error => {
+      console.warn('API not available, using localStorage:', error);
+      return JSON.parse(localStorage.getItem("visitors") || "[]");
+    });
 }
 
 function saveVisitors(visitors) {
+  console.log('🔄 saveVisitors called with:', visitors.length, 'visitors');
+  
+  // Save to both server and localStorage
+  const serverPromise = fetch('/api/visitors', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(visitors)
+  })
+  .then(response => {
+    console.log('📡 Server response status:', response.status);
+    return response.json();
+  })
+  .then(data => {
+    console.log('✅ Data saved to server:', data.message || 'Success');
+    console.log('📊 Server now has:', data.count || 'unknown', 'visitors');
+    return data;
+  })
+  .catch(error => {
+    console.warn('⚠️ Server save failed:', error);
+    throw error;
+  });
+
+  // Always save to localStorage immediately (don't wait for server)
   localStorage.setItem("visitors", JSON.stringify(visitors));
+  console.log('💾 Data saved to localStorage (', visitors.length, 'visitors)');
+
+  return serverPromise;
 }
 
 function renderAdmin() {
@@ -77,178 +161,208 @@ function renderAdmin() {
 }
 
 function addVisitor() {
+  console.log('🆕 addVisitor function called');
+  
   const petName = document.getElementById("petName").value.trim();
   const ownerName = document.getElementById("ownerName").value.trim();
   const roomSelect = document.getElementById("roomSelect").value;
+
+  console.log('📝 Form values - Pet:', petName, 'Owner:', ownerName, 'Room:', roomSelect);
 
   if (!petName || !ownerName) {
     alert("Please fill in pet and owner names");
     return;
   }
 
-  const visitors = getVisitors();
-  const newVisitor = {
-    id: Date.now(),
-    petName,
-    ownerName,
-    room: roomSelect || "lobby",
-    status: roomSelect === "lobby" || !roomSelect ? "waiting_lobby" : "waiting_room",
-    doctor: "",
-    timestamp: new Date().toLocaleTimeString()
-  };
+  getVisitors().then(visitors => {
+    console.log('📊 Current visitors before adding:', visitors.length);
+    
+    const newVisitor = {
+      id: Date.now(),
+      petName,
+      ownerName,
+      room: roomSelect || "lobby",
+      status: roomSelect === "lobby" || !roomSelect ? "waiting_lobby" : "waiting_room",
+      doctor: "",
+      timestamp: new Date().toLocaleTimeString()
+    };
 
-  visitors.push(newVisitor);
-  saveVisitors(visitors);
-  
-  // Play sound alert
-  playAlert();
-  
-  // Clear form
-  document.getElementById("petName").value = "";
-  document.getElementById("ownerName").value = "";
-  document.getElementById("roomSelect").value = "";
-  
-  updateRoomsDisplay();
+    console.log('👤 Creating new visitor:', newVisitor);
+    visitors.push(newVisitor);
+    console.log('📊 Total visitors after adding:', visitors.length);
+    
+    // Save to both data.json (via API) and localStorage
+    saveVisitors(visitors).then(() => {
+      console.log('🎉 New visitor added and synced to both storage locations');
+      
+      // Play sound alert
+      playAlert();
+      
+      // Clear form
+      document.getElementById("petName").value = "";
+      document.getElementById("ownerName").value = "";
+      document.getElementById("roomSelect").value = "";
+      
+      updateRoomsDisplay();
+    }).catch(error => {
+      console.error('❌ Error saving visitor:', error);
+      // Even if server fails, localStorage was updated, so continue
+      playAlert();
+      document.getElementById("petName").value = "";
+      document.getElementById("ownerName").value = "";
+      document.getElementById("roomSelect").value = "";
+      updateRoomsDisplay();
+    });
+  });
 }
 
 function updateVisitorStatus(id, newStatus) {
-  const visitors = getVisitors();
-  const visitor = visitors.find(v => v.id === id);
-  
-  if (!visitor) return;
-  
-  if (newStatus === "waiting_room" && visitor.status === "waiting_lobby") {
-    // Prompt for room selection when moving from lobby
-    const roomNumber = prompt("Enter room number (1-6):");
-    if (!roomNumber || roomNumber < 1 || roomNumber > 6) {
-      alert("Please enter a valid room number (1-6)");
-      return;
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    
+    if (!visitor) return;
+    
+    if (newStatus === "waiting_room" && visitor.status === "waiting_lobby") {
+      // Prompt for room selection when moving from lobby
+      const roomNumber = prompt("Enter room number (1-6):");
+      if (!roomNumber || roomNumber < 1 || roomNumber > 6) {
+        alert("Please enter a valid room number (1-6)");
+        return;
+      }
+      
+      // Check if room is already occupied
+      const roomOccupied = visitors.some(v => v.room == roomNumber && v.id !== id);
+      if (roomOccupied) {
+        const confirm = window.confirm(`Room ${roomNumber} is already occupied. Move anyway?`);
+        if (!confirm) return;
+      }
+      
+      visitor.room = roomNumber;
+      visitor.status = "waiting_room";
+    } else if (newStatus === "dr_assigned") {
+      const doctorName = prompt("Enter doctor name:");
+      if (!doctorName) return;
+      visitor.doctor = doctorName.trim();
+      visitor.status = newStatus;
+    } else {
+      visitor.status = newStatus;
     }
     
-    // Check if room is already occupied
-    const roomOccupied = visitors.some(v => v.room == roomNumber && v.id !== id);
-    if (roomOccupied) {
-      const confirm = window.confirm(`Room ${roomNumber} is already occupied. Move anyway?`);
-      if (!confirm) return;
-    }
-    
-    visitor.room = roomNumber;
-    visitor.status = "waiting_room";
-  } else if (newStatus === "dr_assigned") {
-    const doctorName = prompt("Enter doctor name:");
-    if (!doctorName) return;
-    visitor.doctor = doctorName.trim();
-    visitor.status = newStatus;
-  } else {
-    visitor.status = newStatus;
-  }
-  
-  saveVisitors(visitors);
-  updateRoomsDisplay();
+    saveVisitors(visitors).then(() => {
+      updateRoomsDisplay();
+    });
+  });
 }
 
 function moveVisitorToRoom(id, roomNumber) {
-  const visitors = getVisitors();
-  const visitor = visitors.find(v => v.id === id);
-  
-  if (!visitor) return;
-  
-  // If moving to a numbered room, check if it's valid
-  if (roomNumber !== "lobby" && (roomNumber < 1 || roomNumber > 6)) {
-    alert("Invalid room number");
-    return;
-  }
-  
-  // Check if room is already occupied (except lobby)
-  if (roomNumber !== "lobby") {
-    const roomOccupied = visitors.some(v => v.room == roomNumber && v.id !== id);
-    if (roomOccupied) {
-      const confirm = window.confirm(`Room ${roomNumber} is already occupied. Move anyway?`);
-      if (!confirm) return;
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    
+    if (!visitor) return;
+    
+    // If moving to a numbered room, check if it's valid
+    if (roomNumber !== "lobby" && (roomNumber < 1 || roomNumber > 6)) {
+      alert("Invalid room number");
+      return;
     }
-  }
-  
-  // Update visitor room and status
-  visitor.room = roomNumber;
-  
-  // Update status based on room
-  if (roomNumber === "lobby") {
-    visitor.status = "waiting_lobby";
-    // Clear doctor if moving back to lobby
-    visitor.doctor = "";
-  } else {
-    // Only update to waiting_room if not already assigned to doctor
-    if (visitor.status === "waiting_lobby") {
-      visitor.status = "waiting_room";
+    
+    // Check if room is already occupied (except lobby)
+    if (roomNumber !== "lobby") {
+      const roomOccupied = visitors.some(v => v.room == roomNumber && v.id !== id);
+      if (roomOccupied) {
+        const confirm = window.confirm(`Room ${roomNumber} is already occupied. Move anyway?`);
+        if (!confirm) return;
+      }
     }
-  }
-  
-  saveVisitors(visitors);
-  updateRoomsDisplay();
+    
+    // Update visitor room and status
+    visitor.room = roomNumber;
+    
+    // Update status based on room
+    if (roomNumber === "lobby") {
+      visitor.status = "waiting_lobby";
+      // Clear doctor if moving back to lobby
+      visitor.doctor = "";
+    } else {
+      // Only update to waiting_room if not already assigned to doctor
+      if (visitor.status === "waiting_lobby") {
+        visitor.status = "waiting_room";
+      }
+    }
+    
+    saveVisitors(visitors).then(() => {
+      updateRoomsDisplay();
+    });
+  });
 }
 
 function removeVisitor(id) {
-  const visitors = getVisitors().filter(v => v.id !== id);
-  saveVisitors(visitors);
-  updateRoomsDisplay();
+  getVisitors().then(visitors => {
+    const filteredVisitors = visitors.filter(v => v.id !== id);
+    saveVisitors(filteredVisitors).then(() => {
+      updateRoomsDisplay();
+    });
+  });
 }
 
 function updateRoomsDisplay() {
   const roomsGrid = document.getElementById("roomsGrid");
-  const visitors = getVisitors();
+  if (!roomsGrid) return;
   
-  // Create room cards for rooms 1-6 plus lobby
-  const rooms = ["lobby", "1", "2", "3", "4", "5", "6"];
-  
-  roomsGrid.innerHTML = rooms.map(roomId => {
-    const roomVisitors = visitors.filter(v => v.room === roomId);
-    const roomName = roomId === "lobby" ? "Lobby" : `Room ${roomId}`;
+  getVisitors().then(visitors => {
+    // Create room cards for rooms 1-6 plus lobby
+    const rooms = ["lobby", "1", "2", "3", "4", "5", "6"];
     
-    return `
-      <div class="room-card ${roomVisitors.length > 0 ? 'occupied' : 'empty'}" 
-           data-room="${roomId}"
-           ondrop="dropVisitor(event)" 
-           ondragover="allowDrop(event)">
-        <h3>${roomName}</h3>
-        <div class="visitor-count">${roomVisitors.length} visitor(s)</div>
-        
-        ${roomVisitors.map(visitor => `
-          <div class="visitor-info status-${visitor.status}" 
-               draggable="true" 
-               data-visitor-id="${visitor.id}"
-               ondragstart="dragStart(event)">
-            <div class="visitor-details">
-              <div class="drag-handle">⋮⋮</div>
-              <strong>🐾 ${visitor.petName}</strong><br>
-              <span>👤 ${visitor.ownerName}</span><br>
-              <small>⏰ ${visitor.timestamp}</small>
-              ${visitor.doctor ? `<br><span class="doctor">👩‍⚕️ Dr. ${visitor.doctor}</span>` : ''}
-            </div>
-            
-            <div class="status-badge status-${visitor.status}">
-              ${getStatusText(visitor.status)}
-            </div>
-            
-            <div class="action-buttons">
-              ${visitor.status === "waiting_lobby" ? `
-                <button onclick="updateVisitorStatus(${visitor.id}, 'waiting_room')" class="btn-move">Move to Room</button>
-              ` : ''}
+    roomsGrid.innerHTML = rooms.map(roomId => {
+      const roomVisitors = visitors.filter(v => v.room === roomId);
+      const roomName = roomId === "lobby" ? "Lobby" : `Room ${roomId}`;
+      
+      return `
+        <div class="room-card ${roomVisitors.length > 0 ? 'occupied' : 'empty'}" 
+             data-room="${roomId}"
+             ondrop="dropVisitor(event)" 
+             ondragover="allowDrop(event)">
+          <h3>${roomName}</h3>
+          <div class="visitor-count">${roomVisitors.length} visitor(s)</div>
+          
+          ${roomVisitors.map(visitor => `
+            <div class="visitor-info status-${visitor.status}" 
+                 draggable="true" 
+                 data-visitor-id="${visitor.id}"
+                 ondragstart="dragStart(event)">
+              <div class="visitor-details">
+                <div class="drag-handle">⋮⋮</div>
+                <strong>🐾 ${visitor.petName}</strong><br>
+                <span>👤 ${visitor.ownerName}</span><br>
+                <small>⏰ ${visitor.timestamp}</small>
+                ${visitor.doctor ? `<br><span class="doctor">👩‍⚕️ Dr. ${visitor.doctor}</span>` : ''}
+              </div>
               
-              ${visitor.status === "waiting_room" ? `
-                <button onclick="updateVisitorStatus(${visitor.id}, 'dr_assigned')" class="btn-assign">Assign Doctor</button>
-              ` : ''}
+              <div class="status-badge status-${visitor.status}">
+                ${getStatusText(visitor.status)}
+              </div>
               
-              ${visitor.status === "dr_assigned" ? `
-                <button onclick="removeVisitor(${visitor.id})" class="btn-complete">Complete Visit</button>
-              ` : ''}
-              
-              <button onclick="removeVisitor(${visitor.id})" class="btn-remove">Remove</button>
+              <div class="action-buttons">
+                ${visitor.status === "waiting_lobby" ? `
+                  <button onclick="updateVisitorStatus(${visitor.id}, 'waiting_room')" class="btn-move">Move to Room</button>
+                ` : ''}
+                
+                ${visitor.status === "waiting_room" ? `
+                  <button onclick="updateVisitorStatus(${visitor.id}, 'dr_assigned')" class="btn-assign">Assign Doctor</button>
+                ` : ''}
+                
+                ${visitor.status === "dr_assigned" ? `
+                  <button onclick="removeVisitor(${visitor.id})" class="btn-complete">Complete Visit</button>
+                ` : ''}
+                
+                <button onclick="removeVisitor(${visitor.id})" class="btn-remove">Remove</button>
+              </div>
             </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }).join('');
+          `).join('')}
+        </div>
+      `;
+    }).join('');
+  });
 }
 
 // Drag and Drop Functions
@@ -318,61 +432,81 @@ function getStatusText(status) {
 
 function clearAllVisitors() {
   if (confirm("Clear all visitors? This will reset the dashboard for a new day.")) {
-    localStorage.removeItem("visitors");
-    updateRoomsDisplay();
+    saveVisitors([]).then(() => {
+      updateRoomsDisplay();
+    });
   }
 }
 
 function renderDisplay() {
   const app = document.getElementById("app");
-  const visitors = getVisitors();
-
-  app.innerHTML = `
-    <div class="display-screen">
-      <h1>🏥 Vet Clinic Room Status</h1>
-      <div class="display-time">${new Date().toLocaleString()}</div>
-      
-      <div class="rooms-display-grid">
-        ${[1, 2, 3, 4, 5, 6].map(roomNum => {
-          const roomVisitors = visitors.filter(v => v.room == roomNum);
-          const isEmpty = roomVisitors.length === 0;
-          
-          return `
-            <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
-              <h2>Room ${roomNum}</h2>
-              ${isEmpty ? 
-                '<p class="empty-room">Available</p>' : 
-                roomVisitors.map(visitor => `
-                  <div class="display-visitor">
-                    <p class="pet-name">🐾 ${visitor.petName}</p>
-                    <p class="owner-name">👤 ${visitor.ownerName}</p>
-                    <p class="status-display ${visitor.status}">${getStatusText(visitor.status)}</p>
-                    ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
-                  </div>
-                `).join('')
-              }
-            </div>
-          `;
-        }).join('')}
-      </div>
-      
-      <div class="lobby-display">
-        <h2>🪑 Lobby</h2>
-        <div class="lobby-visitors">
-          ${visitors.filter(v => v.room === "lobby").map(visitor => `
-            <div class="lobby-visitor">
-              <span>🐾 ${visitor.petName} (${visitor.ownerName})</span>
-              <span class="wait-time">⏰ ${visitor.timestamp}</span>
-            </div>
-          `).join('') || '<p class="no-visitors">No one waiting in lobby</p>'}
+  
+  getVisitors().then(visitors => {
+    app.innerHTML = `
+      <div class="display-screen">
+        <h1>🏥 Vet Clinic Room Status</h1>
+        <div class="display-time">${new Date().toLocaleString()}</div>
+        
+        <div class="rooms-display-grid">
+          ${[1, 2, 3, 4, 5, 6].map(roomNum => {
+            const roomVisitors = visitors.filter(v => v.room == roomNum);
+            const isEmpty = roomVisitors.length === 0;
+            
+            return `
+              <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
+                <h2>Room ${roomNum}</h2>
+                ${isEmpty ? 
+                  '<p class="empty-room">Available</p>' : 
+                  roomVisitors.map(visitor => `
+                    <div class="display-visitor">
+                      <p class="pet-name">🐾 ${visitor.petName}</p>
+                      <p class="owner-name">👤 ${visitor.ownerName}</p>
+                      <p class="status-display ${visitor.status}">${getStatusText(visitor.status)}</p>
+                      ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
+                    </div>
+                  `).join('')
+                }
+              </div>
+            `;
+          }).join('')}
+        </div>
+        
+        <div class="lobby-display">
+          <h2>🪑 Lobby</h2>
+          <div class="lobby-visitors">
+            ${visitors.filter(v => v.room === "lobby").map(visitor => `
+              <div class="lobby-visitor">
+                <span>🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                <span class="wait-time">⏰ ${visitor.timestamp}</span>
+              </div>
+            `).join('') || '<p class="no-visitors">No one waiting in lobby</p>'}
+          </div>
+        </div>
+        
+        <div class="admin-link">
+          <a href="index.html">Return to Admin</a>
         </div>
       </div>
-      
-      <div class="admin-link">
-        <a href="index.html">Return to Admin</a>
-      </div>
-    </div>
-  `;
+    `;
+  });
 }
+
+// Make functions globally accessible
+window.addVisitor = addVisitor;
+window.saveVisitors = saveVisitors;
+window.getVisitors = getVisitors;
+window.updateVisitorStatus = updateVisitorStatus;
+window.moveVisitorToRoom = moveVisitorToRoom;
+window.removeVisitor = removeVisitor;
+window.clearAllVisitors = clearAllVisitors;
+
+// Make functions globally accessible
+window.addVisitor = addVisitor;
+window.saveVisitors = saveVisitors;
+window.getVisitors = getVisitors;
+window.updateVisitorStatus = updateVisitorStatus;
+window.moveVisitorToRoom = moveVisitorToRoom;
+window.removeVisitor = removeVisitor;
+window.clearAllVisitors = clearAllVisitors;
 
 window.onload = init;

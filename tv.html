@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏥 Vet Clinic Display - TV Compatible</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* TV-optimized styles */
+    body {
+      overflow: hidden;
+      cursor: none;
+    }
+    
+    .tv-controls {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      z-index: 1000;
+    }
+    
+    .connection-status {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      z-index: 1000;
+    }
+    
+    .status-online { background: rgba(72, 187, 120, 0.9) !important; }
+    .status-offline { background: rgba(229, 62, 62, 0.9) !important; }
+    .status-loading { background: rgba(66, 153, 225, 0.9) !important; }
+    
+    /* Enhanced TV display */
+    .display-screen h1 { font-size: 4rem !important; }
+    .display-room-card h2 { font-size: 2.5rem !important; }
+    .pet-name { font-size: 1.8rem !important; }
+    .owner-name { font-size: 1.4rem !important; }
+    
+    .error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(229, 62, 62, 0.9);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      z-index: 2000;
+    }
+  </style>
+</head>
+<body>
+  <div class="tv-controls">
+    <div>🔄 Auto-refresh: <span id="refreshTimer">3</span>s</div>
+    <div>📺 TV Display Mode</div>
+    <div>👥 Visitors: <span id="visitorCount">-</span></div>
+    <div>🌐 Status: <span id="apiStatus">Connecting...</span></div>
+  </div>
+  
+  <div class="connection-status status-loading" id="connectionStatus">
+    🔄 Connecting to dashboard...
+  </div>
+  
+  <div id="app">
+    <div class="display-screen">
+      <h1>🏥 Vet Clinic Room Status</h1>
+      <div class="display-time">Loading...</div>
+      <div class="rooms-display-grid">
+        <div class="display-room-card empty">
+          <h2>Loading...</h2>
+          <p class="empty-room">Connecting to server...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // TV-compatible dashboard with better error handling
+    let refreshTimer = 3;
+    let visitors = [];
+    let isOnline = false;
+    
+    // Simple XHR function for better TV browser compatibility
+    function fetchData(url, callback, errorCallback) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.timeout = 10000; // 10 second timeout
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              callback(data);
+            } catch (e) {
+              console.error('Parse error:', e);
+              errorCallback('Invalid data format');
+            }
+          } else {
+            errorCallback('Server error: ' + xhr.status);
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        errorCallback('Network error');
+      };
+      
+      xhr.ontimeout = function() {
+        errorCallback('Request timeout');
+      };
+      
+      xhr.send();
+    }
+    
+    // Load visitors from API
+    function loadVisitors() {
+      updateStatus('loading', '🔄 Loading data...');
+      
+      fetchData('/api/visitors', 
+        function(data) {
+          // Success
+          visitors = data || [];
+          isOnline = true;
+          updateStatus('online', '🟢 Connected');
+          updateDisplay();
+          updateVisitorCount();
+          console.log('✅ Loaded', visitors.length, 'visitors from API');
+          
+          // Sync to localStorage for backup
+          try {
+            localStorage.setItem('visitors', JSON.stringify(visitors));
+          } catch (e) {
+            console.warn('Could not save to localStorage:', e);
+          }
+        },
+        function(error) {
+          // Error - try localStorage fallback
+          console.warn('API failed:', error);
+          try {
+            const localData = localStorage.getItem('visitors');
+            visitors = localData ? JSON.parse(localData) : [];
+            isOnline = false;
+            updateStatus('offline', '🟡 Using local data (' + visitors.length + ')');
+            updateDisplay();
+            updateVisitorCount();
+            console.log('📱 Using localStorage:', visitors.length, 'visitors');
+          } catch (e) {
+            console.error('localStorage failed too:', e);
+            visitors = [];
+            updateStatus('offline', '🔴 No data available');
+            showError('Cannot connect to dashboard server');
+          }
+        }
+      );
+    }
+    
+    // Update connection status
+    function updateStatus(type, message) {
+      const status = document.getElementById('connectionStatus');
+      const apiStatus = document.getElementById('apiStatus');
+      
+      status.className = 'connection-status status-' + type;
+      status.textContent = message;
+      apiStatus.textContent = type === 'online' ? 'API' : type === 'offline' ? 'Local' : 'Loading';
+    }
+    
+    // Update visitor count
+    function updateVisitorCount() {
+      document.getElementById('visitorCount').textContent = visitors.length;
+    }
+    
+    // Show error message
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.innerHTML = `
+        <h2>⚠️ Connection Error</h2>
+        <p>${message}</p>
+        <p><small>Retrying in ${refreshTimer} seconds...</small></p>
+      `;
+      document.body.appendChild(errorDiv);
+      
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.parentNode.removeChild(errorDiv);
+        }
+      }, 3000);
+    }
+    
+    // Update the display
+    function updateDisplay() {
+      const app = document.getElementById('app');
+      
+      app.innerHTML = `
+        <div class="display-screen">
+          <h1>🏥 Vet Clinic Room Status</h1>
+          <div class="display-time">${new Date().toLocaleString()}</div>
+          
+          <div class="rooms-display-grid">
+            ${[1, 2, 3, 4, 5, 6].map(roomNum => {
+              const roomVisitors = visitors.filter(v => v.room == roomNum);
+              const isEmpty = roomVisitors.length === 0;
+              
+              return `
+                <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
+                  <h2>Room ${roomNum}</h2>
+                  ${isEmpty ? 
+                    '<p class="empty-room">Available</p>' : 
+                    roomVisitors.map(visitor => `
+                      <div class="display-visitor">
+                        <p class="pet-name">🐾 ${visitor.petName}</p>
+                        <p class="owner-name">👤 ${visitor.ownerName}</p>
+                        <p class="status-display ${visitor.status}">${getStatusText(visitor.status)}</p>
+                        ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
+                      </div>
+                    `).join('')
+                  }
+                </div>
+              `;
+            }).join('')}
+          </div>
+          
+          <div class="lobby-display">
+            <h2>🪑 Lobby</h2>
+            <div class="lobby-visitors">
+              ${visitors.filter(v => v.room === "lobby").map(visitor => `
+                <div class="lobby-visitor">
+                  <span>🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                  <span class="wait-time">⏰ ${visitor.timestamp}</span>
+                </div>
+              `).join('') || '<p class="no-visitors">No one waiting in lobby</p>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Get status text
+    function getStatusText(status) {
+      switch(status) {
+        case "waiting_lobby": return "📋 Waiting in Lobby";
+        case "waiting_room": return "🚪 Waiting in Room";
+        case "dr_assigned": return "👩‍⚕️ Doctor Assigned";
+        default: return status;
+      }
+    }
+    
+    // Timer function
+    function updateTimer() {
+      document.getElementById('refreshTimer').textContent = refreshTimer;
+      refreshTimer--;
+      
+      if (refreshTimer < 0) {
+        loadVisitors();
+        refreshTimer = 3; // Refresh every 3 seconds
+      }
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'r' || e.key === 'R') {
+        loadVisitors();
+        refreshTimer = 3;
+      }
+      if (e.key === 'Escape') {
+        window.location.href = 'index.html';
+      }
+    });
+    
+    // Initialize
+    console.log('🏥 TV Dashboard starting...');
+    loadVisitors();
+    setInterval(updateTimer, 1000);
+    
+    // Auto-hide cursor
+    let cursorTimeout;
+    function hideCursor() {
+      document.body.style.cursor = 'none';
+    }
+    function showCursor() {
+      document.body.style.cursor = 'default';
+      clearTimeout(cursorTimeout);
+      cursorTimeout = setTimeout(hideCursor, 3000);
+    }
+    document.addEventListener('mousemove', showCursor);
+    showCursor();
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏥 Vet Clinic Display - Kiosk Mode</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Kiosk mode display for vet clinic dashboard - always shows room status" />
+  <style>
+    /* Kiosk-specific styles */
+    body {
+      overflow: hidden; /* Prevent scrolling */
+      cursor: none; /* Hide cursor after inactivity */
+    }
+    
+    .kiosk-controls {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      z-index: 1000;
+    }
+    
+    .connection-status {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      z-index: 1000;
+    }
+    
+    .connection-status.online {
+      background: rgba(72, 187, 120, 0.8);
+    }
+    
+    .connection-status.offline {
+      background: rgba(229, 62, 62, 0.8);
+    }
+    
+    /* Auto-hide cursor after 3 seconds */
+    body.hide-cursor {
+      cursor: none;
+    }
+    
+    /* TV-optimized text sizes */
+    .display-screen h1 {
+      font-size: 4rem !important;
+    }
+    
+    .display-room-card h2 {
+      font-size: 2.5rem !important;
+    }
+    
+    .pet-name {
+      font-size: 1.8rem !important;
+    }
+    
+    .owner-name {
+      font-size: 1.4rem !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="kiosk-controls">
+    <div>🔄 Auto-refresh: <span id="refreshTimer">5</span>s</div>
+    <div>📺 Kiosk Mode Active</div>
+    <div><button onclick="manualRefresh()" style="background: #4299e1; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; cursor: pointer;">🔄 Refresh Now</button></div>
+    <div style="font-size: 0.7rem;">Visitors: <span id="visitorCount">0</span></div>
+  </div>
+  
+  <div class="connection-status online" id="connectionStatus">
+    🟢 Connected
+  </div>
+  
+  <div id="app"></div>
+  
+  <script src="script.js"></script>
+  <script>
+    // Kiosk mode enhancements
+    let refreshCountdown = 5;
+    let cursorTimeout;
+    
+    // Force display mode
+    window.location.hash = '#display';
+    
+    // Initialize display
+    setTimeout(() => {
+      init();
+      updateVisitorCount();
+    }, 100);
+    
+    // Manual refresh function
+    function manualRefresh() {
+      console.log('🔄 Manual refresh triggered...');
+      renderDisplay();
+      updateVisitorCount();
+      refreshCountdown = 5; // Reset timer
+    }
+    
+    // Update visitor count for debugging
+    function updateVisitorCount() {
+      fetch('/api/visitors')
+        .then(response => response.json())
+        .then(visitors => {
+          document.getElementById('visitorCount').textContent = visitors.length;
+          console.log('👥 Current visitors:', visitors.length, visitors);
+          
+          // Auto-sync: if server empty but localStorage has data, migrate
+          const localData = JSON.parse(localStorage.getItem("visitors") || "[]");
+          if (visitors.length === 0 && localData.length > 0) {
+            console.log('🔄 Auto-migrating localStorage to server...');
+            fetch('/api/visitors', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(localData)
+            }).then(() => {
+              console.log('✅ Auto-migration completed');
+              setTimeout(updateVisitorCount, 1000); // Refresh after migration
+            });
+          }
+        })
+        .catch(error => {
+          console.warn('API not available, checking localStorage:', error);
+          const visitors = JSON.parse(localStorage.getItem("visitors") || "[]");
+          document.getElementById('visitorCount').textContent = visitors.length + ' (local)';
+        });
+    }
+    
+    // Auto-refresh countdown and data refresh
+    function updateRefreshTimer() {
+      document.getElementById('refreshTimer').textContent = refreshCountdown;
+      refreshCountdown--;
+      
+      if (refreshCountdown < 0) {
+        // Add visual feedback for refresh
+        const status = document.getElementById('connectionStatus');
+        status.textContent = '🔄 Refreshing...';
+        status.className = 'connection-status';
+        
+        // Refresh display data instead of full page reload
+        console.log('🔄 Refreshing dashboard data...');
+        renderDisplay();
+        updateVisitorCount();
+        refreshCountdown = 5; // Reset to 5 seconds for faster updates
+        
+        // Reset status after refresh
+        setTimeout(() => {
+          status.textContent = '🟢 Connected';
+          status.className = 'connection-status online';
+        }, 500);
+      }
+    }
+    
+    // Start refresh timer
+    setInterval(updateRefreshTimer, 1000);
+    
+    // Auto-hide cursor
+    function resetCursorTimer() {
+      document.body.classList.remove('hide-cursor');
+      clearTimeout(cursorTimeout);
+      cursorTimeout = setTimeout(() => {
+        document.body.classList.add('hide-cursor');
+      }, 3000);
+    }
+    
+    // Reset cursor timer on any movement
+    document.addEventListener('mousemove', resetCursorTimer);
+    document.addEventListener('click', resetCursorTimer);
+    
+    // Initial cursor hide
+    resetCursorTimer();
+    
+    // Connection status monitoring
+    function checkConnection() {
+      const status = document.getElementById('connectionStatus');
+      if (navigator.onLine) {
+        status.textContent = '🟢 Connected';
+        status.className = 'connection-status online';
+      } else {
+        status.textContent = '🔴 Offline';
+        status.className = 'connection-status offline';
+      }
+    }
+    
+    // Monitor connection status
+    window.addEventListener('online', checkConnection);
+    window.addEventListener('offline', checkConnection);
+    setInterval(checkConnection, 5000);
+    
+    // Prevent context menu and other interruptions
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+    
+    // Keyboard shortcuts for kiosk management
+    document.addEventListener('keydown', function(e) {
+      // Ctrl + R to force refresh
+      if (e.ctrlKey && e.key === 'r') {
+        window.location.reload();
+      }
+      
+      // Ctrl + H to toggle controls visibility
+      if (e.ctrlKey && e.key === 'h') {
+        const controls = document.querySelector('.kiosk-controls');
+        const status = document.querySelector('.connection-status');
+        controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+        status.style.display = status.style.display === 'none' ? 'block' : 'none';
+      }
+      
+      // Escape to exit kiosk mode (go back to admin)
+      if (e.key === 'Escape') {
+        window.location.href = 'index.html';
+      }
+    });
+    
+    // Wake up display on any activity (for TVs that sleep)
+    function keepAwake() {
+      if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').catch(err => {
+          console.log('Wake lock failed:', err);
+        });
+      }
+    }
+    
+    // Request wake lock
+    keepAwake();
+    
+    // Re-request wake lock every 30 seconds
+    setInterval(keepAwake, 30000);
+    
+    console.log('🏥 Vet Dashboard Kiosk Mode Activated');
+    console.log('Shortcuts:');
+    console.log('- Ctrl+R: Force refresh');
+    console.log('- Ctrl+H: Toggle UI controls');
+    console.log('- Escape: Exit to admin mode');
+  </script>
+</body>
+</html>
