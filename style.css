@@ -1,0 +1,464 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f7fa;
+  color: #333;
+}
+
+#app {
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Admin Interface Styles */
+.admin-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.admin-container h1 {
+  color: #2c5282;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+}
+
+.add-visitor-section {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #4299e1;
+}
+
+.form-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+input, select, button {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+input, select {
+  min-width: 200px;
+  flex: 1;
+}
+
+button {
+  background: #4299e1;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+button:hover {
+  background: #3182ce;
+}
+
+.clear-btn {
+  background: #e53e3e;
+}
+
+.clear-btn:hover {
+  background: #c53030;
+}
+
+/* Room Grid Styles */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.room-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  min-height: 200px;
+}
+
+.room-card.occupied {
+  border-color: #48bb78;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.15);
+}
+
+.room-card.empty {
+  border-color: #cbd5e0;
+  background: #f7fafc;
+}
+
+.room-card h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.visitor-count {
+  text-align: center;
+  font-weight: bold;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #edf2f7;
+  border-radius: 4px;
+}
+
+.visitor-info {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid #cbd5e0;
+}
+
+.visitor-info.status-waiting_lobby {
+  border-left-color: #fbb6ce;
+  background: #fef5e7;
+}
+
+.visitor-info.status-waiting_room {
+  border-left-color: #9decf9;
+  background: #e6fffa;
+}
+
+.visitor-info.status-dr_assigned {
+  border-left-color: #9ae6b4;
+  background: #f0fff4;
+}
+
+.visitor-details {
+  margin-bottom: 1rem;
+}
+
+.visitor-details strong {
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.doctor {
+  color: #38a169;
+  font-weight: bold;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.status-badge.status-waiting_lobby {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.status-badge.status-waiting_room {
+  background: #bee3f8;
+  color: #2b6cb0;
+}
+
+.status-badge.status-dr_assigned {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+}
+
+.btn-move {
+  background: #4299e1;
+}
+
+.btn-assign {
+  background: #38a169;
+}
+
+.btn-complete {
+  background: #805ad5;
+}
+
+.btn-remove {
+  background: #e53e3e;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.controls {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.display-link {
+  background: #805ad5;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  border-radius: 6px;
+  margin-left: 1rem;
+  transition: background 0.2s;
+}
+
+.display-link:hover {
+  background: #6b46c1;
+}
+
+/* Display Mode Styles */
+.display-screen {
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  color: white;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.display-screen h1 {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #f7fafc;
+}
+
+.display-time {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 3rem;
+  color: #a0aec0;
+}
+
+.rooms-display-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.display-room-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid #4a5568;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.display-room-card.occupied {
+  border-color: #48bb78;
+  background: rgba(72, 187, 120, 0.2);
+}
+
+.display-room-card.empty {
+  border-color: #718096;
+  background: rgba(113, 128, 150, 0.1);
+}
+
+.display-room-card h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+.empty-room {
+  font-size: 1.2rem;
+  color: #a0aec0;
+  font-style: italic;
+}
+
+.display-visitor {
+  margin-bottom: 1rem;
+}
+
+.pet-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #f7fafc;
+}
+
+.owner-name {
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+  color: #cbd5e0;
+}
+
+.status-display {
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  font-weight: bold;
+}
+
+.status-display.waiting_lobby {
+  background: rgba(251, 182, 206, 0.3);
+  color: #fbb6ce;
+}
+
+.status-display.waiting_room {
+  background: rgba(157, 236, 249, 0.3);
+  color: #9decf9;
+}
+
+.status-display.dr_assigned {
+  background: rgba(154, 230, 180, 0.3);
+  color: #9ae6b4;
+}
+
+.doctor-name {
+  font-size: 1.1rem;
+  color: #68d391;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.lobby-display {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.lobby-display h2 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #e2e8f0;
+}
+
+.lobby-visitors {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lobby-visitor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  color: #f7fafc;
+}
+
+.wait-time {
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+.no-visitors {
+  text-align: center;
+  color: #a0aec0;
+  font-style: italic;
+  font-size: 1.2rem;
+}
+
+.admin-link {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.admin-link a {
+  background: #4299e1;
+  color: white;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+}
+
+.admin-link a:hover {
+  background: #3182ce;
+}
+
+/* Drag and Drop Styles */
+.visitor-info[draggable="true"] {
+  cursor: move;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.visitor-info[draggable="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: #a0aec0;
+  font-size: 1.2rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.room-card.drop-zone {
+  border-style: dashed;
+  border-width: 3px;
+  animation: pulse 1.5s infinite;
+}
+
+.room-card.drag-over {
+  border-color: #4299e1;
+  background-color: rgba(66, 153, 225, 0.1);
+  transform: scale(1.02);
+}
+
+@keyframes pulse {
+  0% { border-color: #cbd5e0; }
+  50% { border-color: #4299e1; }
+  100% { border-color: #cbd5e0; }
+}
+
+.visitor-info[draggable="true"] .visitor-details {
+  padding-right: 2rem; /* Make room for drag handle */
+}
+
+.instruction-text {
+  text-align: center;
+  color: #4a5568;
+  background: #e6fffa;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #38b2ac;
+}
