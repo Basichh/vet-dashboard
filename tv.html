@@ -14,25 +14,25 @@
     
     .tv-controls {
       position: fixed;
-      top: 10px;
-      right: 10px;
+      top: 5px;
+      right: 5px;
       background: rgba(0, 0, 0, 0.8);
       color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
       z-index: 1000;
     }
     
     .connection-status {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
+      bottom: 5px;
+      left: 5px;
       background: rgba(0, 0, 0, 0.8);
       color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.6rem;
       z-index: 1000;
     }
     
@@ -40,11 +40,192 @@
     .status-offline { background: rgba(229, 62, 62, 0.9) !important; }
     .status-loading { background: rgba(66, 153, 225, 0.9) !important; }
     
-    /* Enhanced TV display */
-    .display-screen h1 { font-size: 4rem !important; }
-    .display-room-card h2 { font-size: 2.5rem !important; }
-    .pet-name { font-size: 1.8rem !important; }
-    .owner-name { font-size: 1.4rem !important; }
+    /* Enhanced TV display - No scrolling, compact grid layout */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    #app {
+      height: 100vh;
+      padding: 0;
+      margin: 0;
+      /* Account for fixed controls */
+      box-sizing: border-box;
+    }
+    
+    .display-screen { 
+      height: 100%;
+      padding: 0.1rem;
+      display: grid;
+      grid-template-columns: 3fr 1fr; /* Rooms take 3/4, lobby takes 1/4 */
+      grid-template-rows: auto auto 1fr;
+      gap: 0.2rem;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    
+    .display-screen h1 { 
+      grid-column: 1 / -1; /* Span full width */
+      font-size: clamp(1rem, 2.5vw, 1.5rem) !important; 
+      margin: 0 !important;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .display-time {
+      grid-column: 1 / -1; /* Span full width */
+      font-size: clamp(0.7rem, 1.8vw, 1rem) !important;
+      margin: 0 !important;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .rooms-display-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 columns */
+      grid-template-rows: repeat(2, 1fr); /* 2 rows */
+      gap: 0.2rem;
+      min-height: 0;
+    }
+    
+    .display-room-card { 
+      padding: 0.2rem !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .display-room-card h2 { 
+      font-size: clamp(1rem, 2.5vw, 1.5rem) !important; /* Reduced from 3x */
+      margin: 0 0 0.1rem 0 !important;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .display-visitor {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      text-align: center;
+    }
+    
+    .pet-name { 
+      font-size: clamp(0.8rem, 2vw, 1.2rem) !important; /* Reduced from 3x */
+      margin: 0.04rem 0 !important;
+      line-height: 1.1;
+    }
+    
+    .owner-name { 
+      font-size: clamp(0.7rem, 1.8vw, 1rem) !important; /* Reduced from 3x */
+      margin: 0.04rem 0 !important;
+      line-height: 1.1;
+    }
+    
+    .doctor-name {
+      font-size: clamp(0.6rem, 1.6vw, 0.9rem) !important; /* Reduced from 3x */
+      margin: 0.04rem 0 !important;
+      line-height: 1.1;
+    }
+    
+    .status-display {
+      font-size: clamp(0.5rem, 1.4vw, 0.8rem) !important; /* Reduced from 3x */
+      padding: 0.04rem !important;
+      margin: 0.04rem 0 !important;
+      line-height: 1.1;
+    }
+    
+    .empty-room {
+      font-size: clamp(0.7rem, 1.8vw, 1rem) !important; /* Reduced from 3x */
+      margin: 0.1rem 0 !important;
+      text-align: center;
+    }
+    
+    .lobby-display {
+      padding: 0.2rem !important;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    
+    .lobby-display h2 {
+      font-size: clamp(1rem, 2.5vw, 1.5rem) !important; /* Reduced from 3x */
+      margin: 0 0 0.1rem 0 !important;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .lobby-visitors {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      overflow-y: auto;
+      /* Custom scrollbar for better TV display */
+      scrollbar-width: thin;
+    }
+    
+    .lobby-visitors::-webkit-scrollbar {
+      width: 3px;
+    }
+    
+    .lobby-visitors::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .lobby-visitors::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+    }
+    
+    .lobby-visitor {
+      padding: 0.1rem !important;
+      font-size: clamp(0.6rem, 1.6vw, 0.9rem) !important; /* Reduced from 3x */
+      line-height: 1.1;
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    .lobby-visitor-name {
+      font-weight: bold;
+      margin-bottom: 0.04rem;
+    }
+    
+    .lobby-visitor-time {
+      opacity: 0.7;
+      font-size: 0.9em;
+    }
+    
+    .no-visitors {
+      font-size: clamp(0.7rem, 1.8vw, 1rem) !important; /* Reduced from 3x */
+      margin: 0 !important;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    
+    .lobby-overflow {
+      font-size: clamp(0.5rem, 1.4vw, 0.8rem) !important; /* Reduced from 3x */
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      padding: 0.1rem;
+      color: #ffd700;
+      flex-shrink: 0;
+    }
     
     .error-message {
       position: fixed;
@@ -89,7 +270,47 @@
     // TV-compatible dashboard with better error handling
     let refreshTimer = 3;
     let visitors = [];
+    let previousVisitorCount = 0;
     let isOnline = false;
+    
+    // Sound notification function for TV display
+    function playNotificationSound() {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Pleasant notification sound
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.8);
+        
+        // Second tone for pleasant notification
+        setTimeout(() => {
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = 'sine';
+          gain2.gain.setValueAtTime(0.08, audioContext.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+          osc2.start(audioContext.currentTime);
+          osc2.stop(audioContext.currentTime + 0.6);
+        }, 200);
+        
+        console.log('🔊 Notification sound played');
+      } catch (error) {
+        console.warn('🔇 Could not play sound:', error);
+      }
+    }
     
     // Simple XHR function for better TV browser compatibility
     function fetchData(url, callback, errorCallback) {
@@ -131,7 +352,16 @@
       fetchData('/api/visitors', 
         function(data) {
           // Success
-          visitors = data || [];
+          const newVisitors = data || [];
+          
+          // Check for visitor count changes and play sound
+          if (previousVisitorCount > 0 && newVisitors.length > previousVisitorCount) {
+            console.log('🔊 New visitor detected, playing notification sound');
+            playNotificationSound();
+          }
+          
+          visitors = newVisitors;
+          previousVisitorCount = visitors.length;
           isOnline = true;
           updateStatus('online', '🟢 Connected');
           updateDisplay();
@@ -150,7 +380,14 @@
           console.warn('API failed:', error);
           try {
             const localData = localStorage.getItem('visitors');
-            visitors = localData ? JSON.parse(localData) : [];
+            const newVisitors = localData ? JSON.parse(localData) : [];
+            
+            // Initialize previousVisitorCount on first load
+            if (previousVisitorCount === 0) {
+              previousVisitorCount = newVisitors.length;
+            }
+            
+            visitors = newVisitors;
             isOnline = false;
             updateStatus('offline', '🟡 Using local data (' + visitors.length + ')');
             updateDisplay();
@@ -235,12 +472,22 @@
           <div class="lobby-display">
             <h2>🪑 Lobby</h2>
             <div class="lobby-visitors">
-              ${visitors.filter(v => v.room === "lobby").map(visitor => `
-                <div class="lobby-visitor">
-                  <span>🐾 ${visitor.petName} (${visitor.ownerName})</span>
-                  <span class="wait-time">⏰ ${visitor.timestamp}</span>
-                </div>
-              `).join('') || '<p class="no-visitors">No one waiting in lobby</p>'}
+              ${(() => {
+                const lobbyVisitors = visitors.filter(v => v.room === "lobby");
+                if (lobbyVisitors.length === 0) {
+                  return '<div class="no-visitors">No one waiting in lobby</div>';
+                }
+                
+                // Show all visitors in a scrollable list
+                let html = lobbyVisitors.map(visitor => `
+                  <div class="lobby-visitor">
+                    <div class="lobby-visitor-name">🐾 ${visitor.petName}</div>
+                    <div class="lobby-visitor-time">⏰ ${visitor.timestamp}</div>
+                  </div>
+                `).join('');
+                
+                return html;
+              })()}
             </div>
           </div>
         </div>
@@ -281,6 +528,19 @@
     
     // Initialize
     console.log('🏥 TV Dashboard starting...');
+    
+    // Initialize visitor count from localStorage to avoid false notifications on startup
+    try {
+      const localData = localStorage.getItem('visitors');
+      if (localData) {
+        const localVisitors = JSON.parse(localData);
+        previousVisitorCount = localVisitors.length;
+        console.log('📊 Initialized with', previousVisitorCount, 'visitors from localStorage');
+      }
+    } catch (e) {
+      console.warn('Could not read localStorage on startup:', e);
+    }
+    
     loadVisitors();
     setInterval(updateTimer, 1000);
     
