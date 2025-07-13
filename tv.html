@@ -14,14 +14,14 @@
     
     .tv-controls {
       position: fixed;
-      top: 5px;
-      right: 5px;
+      top: 4px;
+      right: 4px;
       background: rgba(0, 0, 0, 0.8);
       color: white;
-      padding: 0.5rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      z-index: 1000;
+      padding: 0.4rem;
+      border-radius: 3px;
+      font-size: 0.6rem;
+      z-index: 900;
     }
     
     .connection-status {
@@ -98,6 +98,20 @@
       min-height: 0;
       width: 100%;
       height: 100%;
+      border: 3px solid;
+    }
+    
+    /* Status-based border colors for room cards */
+    .display-room-card.empty {
+      border-color: #718096;
+    }
+    
+    .display-room-card.status-waiting_room {
+      border-color: #48bb78; /* Green for waiting in room */
+    }
+    
+    .display-room-card.status-dr_assigned {
+      border-color: #c084fc; /* Purple for doctor assigned */
     }
     
     .display-room-card h2 { 
@@ -239,13 +253,76 @@
       text-align: center;
       z-index: 2000;
     }
+    
+    /* Stats Panel for TV Display */
+    .stats-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #4a5568;
+      border-radius: 12px;
+      padding: 0.8rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      min-width: 180px;
+      z-index: 1000;
+      color: #f7fafc;
+    }
+
+    .stats-panel h3 {
+      margin: 0 0 0.4rem 0;
+      color: #f7fafc;
+      font-size: 0.9rem;
+      text-align: center;
+      border-bottom: 1px solid #4a5568;
+      padding-bottom: 0.4rem;
+    }
+
+    .stats-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.2rem 0;
+      font-size: 0.75rem;
+    }
+
+    .stats-label {
+      color: #a0aec0;
+    }
+
+    .stats-value {
+      font-weight: bold;
+      color: #f7fafc;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .auto-refresh-indicator {
+      text-align: center;
+      font-size: 0.65rem;
+      color: #68d391;
+      margin-top: 0.4rem;
+      padding-top: 0.4rem;
+      border-top: 1px solid #4a5568;
+    }
+    
+    /* Updated color scheme for doctor assigned status */
+    .status-display.dr_assigned {
+      background: rgba(233, 213, 255, 0.3);
+      color: #c084fc;
+    }
+    
+    .doctor-name {
+      color: #c084fc !important;
+    }
   </style>
 </head>
 <body>
   <div class="tv-controls">
     <div>🔄 Auto-refresh: <span id="refreshTimer">3</span>s</div>
     <div>📺 TV Display Mode</div>
-    <div>👥 Visitors: <span id="visitorCount">-</span></div>
     <div>🌐 Status: <span id="apiStatus">Connecting...</span></div>
   </div>
   
@@ -365,7 +442,6 @@
           isOnline = true;
           updateStatus('online', '🟢 Connected');
           updateDisplay();
-          updateVisitorCount();
           console.log('✅ Loaded', visitors.length, 'visitors from API');
           
           // Sync to localStorage for backup
@@ -391,7 +467,6 @@
             isOnline = false;
             updateStatus('offline', '🟡 Using local data (' + visitors.length + ')');
             updateDisplay();
-            updateVisitorCount();
             console.log('📱 Using localStorage:', visitors.length, 'visitors');
           } catch (e) {
             console.error('localStorage failed too:', e);
@@ -411,11 +486,6 @@
       status.className = 'connection-status status-' + type;
       status.textContent = message;
       apiStatus.textContent = type === 'online' ? 'API' : type === 'offline' ? 'Local' : 'Loading';
-    }
-    
-    // Update visitor count
-    function updateVisitorCount() {
-      document.getElementById('visitorCount').textContent = visitors.length;
     }
     
     // Show error message
@@ -450,8 +520,16 @@
               const roomVisitors = visitors.filter(v => v.room == roomNum);
               const isEmpty = roomVisitors.length === 0;
               
+              // Determine room status based on visitors
+              let roomStatus = 'empty';
+              if (!isEmpty) {
+                // Check if any visitor has doctor assigned
+                const hasDoctorAssigned = roomVisitors.some(v => v.status === 'dr_assigned');
+                roomStatus = hasDoctorAssigned ? 'status-dr_assigned' : 'status-waiting_room';
+              }
+              
               return `
-                <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
+                <div class="display-room-card ${roomStatus}">
                   <h2>Room ${roomNum}</h2>
                   ${isEmpty ? 
                     '<p class="empty-room">Available</p>' : 
@@ -492,6 +570,51 @@
           </div>
         </div>
       `;
+      
+      // Add stats panel
+      updateStatsPanel();
+    }
+    
+    // Generate and update stats panel
+    function updateStatsPanel() {
+      // Remove existing stats panel
+      const existingStatsPanel = document.querySelector('.stats-panel');
+      if (existingStatsPanel) {
+        existingStatsPanel.remove();
+      }
+      
+      // Generate stats
+      const totalVisitors = visitors.length;
+      const lobbyCount = visitors.filter(v => v.room === "lobby").length;
+      const roomCount = visitors.filter(v => v.room !== "lobby").length;
+      const doctorAssigned = visitors.filter(v => v.status === "dr_assigned").length;
+      
+      const statsHTML = `
+        <div class="stats-panel">
+          <h3>📊 Dashboard Stats</h3>
+          <div class="stats-item">
+            <span class="stats-label">Total Visitors:</span>
+            <span class="stats-value">${totalVisitors}</span>
+          </div>
+          <div class="stats-item">
+            <span class="stats-label">In Lobby:</span>
+            <span class="stats-value">${lobbyCount}</span>
+          </div>
+          <div class="stats-item">
+            <span class="stats-label">In Rooms:</span>
+            <span class="stats-value">${roomCount}</span>
+          </div>
+          <div class="stats-item">
+            <span class="stats-label">With Doctor:</span>
+            <span class="stats-value">${doctorAssigned}</span>
+          </div>
+          <div class="auto-refresh-indicator">
+            🔄 Auto-refresh active
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', statsHTML);
     }
     
     // Get status text

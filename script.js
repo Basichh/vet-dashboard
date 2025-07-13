@@ -69,6 +69,8 @@ function init() {
   if (hash === "#display") {
     renderDisplay();
     setInterval(renderDisplay, 5000); // Refresh every 5 sec
+    // Update time display every second for accuracy
+    setInterval(updateCurrentTimeDisplay, 1000);
   } else {
     renderAdmin();
   }
@@ -184,7 +186,12 @@ function addVisitor() {
       room: roomSelect || "lobby",
       status: roomSelect === "lobby" || !roomSelect ? "waiting_lobby" : "waiting_room",
       doctor: "",
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString('en-US', { 
+        hour12: true, 
+        hour: 'numeric', 
+        minute: '2-digit',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      })
     };
 
     console.log('👤 Creating new visitor:', newVisitor);
@@ -362,6 +369,13 @@ function updateRoomsDisplay() {
         </div>
       `;
     }).join('');
+    
+    // Add or update stats panel
+    let existingStatsPanel = document.querySelector('.stats-panel');
+    if (existingStatsPanel) {
+      existingStatsPanel.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', generateStatsPanel(visitors));
   });
 }
 
@@ -438,14 +452,57 @@ function clearAllVisitors() {
   }
 }
 
+// Function to generate stats panel HTML
+function generateStatsPanel(visitors) {
+  const totalVisitors = visitors.length;
+  const lobbyCount = visitors.filter(v => v.room === "lobby").length;
+  const roomCount = visitors.filter(v => v.room !== "lobby").length;
+  const doctorAssigned = visitors.filter(v => v.status === "dr_assigned").length;
+  
+  return `
+    <div class="stats-panel">
+      <h3>📊 Dashboard Stats</h3>
+      <div class="stats-item">
+        <span class="stats-label">Total Visitors:</span>
+        <span class="stats-value">${totalVisitors}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">In Lobby:</span>
+        <span class="stats-value">${lobbyCount}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">In Rooms:</span>
+        <span class="stats-value">${roomCount}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">With Doctor:</span>
+        <span class="stats-value">${doctorAssigned}</span>
+      </div>
+      <div class="auto-refresh-indicator">
+        🔄 Auto-refresh active
+      </div>
+    </div>
+  `;
+}
+
 function renderDisplay() {
   const app = document.getElementById("app");
   
   getVisitors().then(visitors => {
+    const currentTime = new Date().toLocaleString('en-US', { 
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+    
     app.innerHTML = `
       <div class="display-screen">
         <h1>🏥 Vet Clinic Room Status</h1>
-        <div class="display-time">${new Date().toLocaleString()}</div>
+        <div class="display-time" id="currentTime">${currentTime}</div>
         
         <div class="rooms-display-grid">
           ${[1, 2, 3, 4, 5, 6].map(roomNum => {
@@ -488,17 +545,35 @@ function renderDisplay() {
         </div>
       </div>
     `;
+    
+    // Add stats panel to display mode
+    let existingStatsPanel = document.querySelector('.stats-panel');
+    if (existingStatsPanel) {
+      existingStatsPanel.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', generateStatsPanel(visitors));
+    
+    // Update the current time every second
+    updateCurrentTimeDisplay();
   });
 }
 
-// Make functions globally accessible
-window.addVisitor = addVisitor;
-window.saveVisitors = saveVisitors;
-window.getVisitors = getVisitors;
-window.updateVisitorStatus = updateVisitorStatus;
-window.moveVisitorToRoom = moveVisitorToRoom;
-window.removeVisitor = removeVisitor;
-window.clearAllVisitors = clearAllVisitors;
+// Function to update just the time display without re-rendering everything
+function updateCurrentTimeDisplay() {
+  const timeElement = document.getElementById('currentTime');
+  if (timeElement) {
+    const currentTime = new Date().toLocaleString('en-US', { 
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+    timeElement.textContent = currentTime;
+  }
+}
 
 // Make functions globally accessible
 window.addVisitor = addVisitor;

@@ -143,8 +143,8 @@ button:hover {
 }
 
 .visitor-info.status-dr_assigned {
-  border-left-color: #9ae6b4;
-  background: #f0fff4;
+  border-left-color: #f093fb;
+  background: #fef5ff;
 }
 
 .visitor-details {
@@ -181,8 +181,8 @@ button:hover {
 }
 
 .status-badge.status-dr_assigned {
-  background: #c6f6d5;
-  color: #276749;
+  background: #e9d5ff;
+  color: #7c3aed;
 }
 
 .action-buttons {
@@ -333,13 +333,13 @@ button:hover {
 }
 
 .status-display.dr_assigned {
-  background: rgba(154, 230, 180, 0.3);
-  color: #9ae6b4;
+  background: rgba(233, 213, 255, 0.3);
+  color: #c084fc;
 }
 
 .doctor-name {
   font-size: 1.1rem;
-  color: #68d391;
+  color: #c084fc;
   font-weight: bold;
   margin: 0.5rem 0;
 }
@@ -461,4 +461,83 @@ button:hover {
   border-radius: 6px;
   margin-bottom: 1.5rem;
   border-left: 4px solid #38b2ac;
+}
+
+/* Stats Panel Styles */
+.stats-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  min-width: 200px;
+  z-index: 1000;
+}
+
+.stats-panel h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+  font-size: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.stats-label {
+  color: #4a5568;
+}
+
+.stats-value {
+  font-weight: bold;
+  color: #2d3748;
+  background: #f7fafc;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.auto-refresh-indicator {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #68d391;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Display mode stats panel */
+.display-screen .stats-panel {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: #4a5568;
+  color: #f7fafc;
+}
+
+.display-screen .stats-panel h3 {
+  color: #f7fafc;
+  border-bottom-color: #4a5568;
+}
+
+.display-screen .stats-label {
+  color: #a0aec0;
+}
+
+.display-screen .stats-value {
+  color: #f7fafc;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.display-screen .auto-refresh-indicator {
+  color: #68d391;
+  border-top-color: #4a5568;
 }
