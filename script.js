@@ -202,9 +202,6 @@ function addVisitor() {
     saveVisitors(visitors).then(() => {
       console.log('🎉 New visitor added and synced to both storage locations');
       
-      // Play sound alert
-      playAlert();
-      
       // Clear form
       document.getElementById("petName").value = "";
       document.getElementById("ownerName").value = "";
@@ -214,7 +211,6 @@ function addVisitor() {
     }).catch(error => {
       console.error('❌ Error saving visitor:', error);
       // Even if server fails, localStorage was updated, so continue
-      playAlert();
       document.getElementById("petName").value = "";
       document.getElementById("ownerName").value = "";
       document.getElementById("roomSelect").value = "";
@@ -521,22 +517,15 @@ function generateStatsPanel(visitors) {
   `;
 }
 
-// --- Track last visitor IDs for display mode sound alert ---
+// --- Track last visitor IDs for display mode (sound moved to tv.html) ---
 let lastVisitorIds = [];
 
 function renderDisplay() {
   const app = document.getElementById("app");
   
   getVisitors().then(visitors => {
-    // --- Detect new visitors for sound alert ---
+    // --- Track visitor IDs for other purposes (sound now handled in tv.html) ---
     const currentIds = visitors.map(v => v.id);
-    if (lastVisitorIds.length > 0) {
-      // Find any new IDs
-      const newIds = currentIds.filter(id => !lastVisitorIds.includes(id));
-      if (newIds.length > 0) {
-        playAlert();
-      }
-    }
     lastVisitorIds = currentIds;
     
     const currentTime = new Date().toLocaleString('en-US', { 

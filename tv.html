@@ -140,6 +140,14 @@
       line-height: 1.1;
     }
     
+    .arrival-time {
+      font-size: clamp(0.6rem, 1.6vw, 0.9rem) !important;
+      margin: 0.04rem 0 !important;
+      line-height: 1.1;
+      color: #68d391;
+      font-style: italic;
+    }
+    
     .doctor-name {
       font-size: clamp(0.6rem, 1.6vw, 0.9rem) !important; /* Reduced from 3x */
       margin: 0.04rem 0 !important;
@@ -402,45 +410,229 @@
     let refreshTimer = 3;
     let visitors = [];
     let previousVisitorCount = 0;
+    let previousVisitorState = []; // Track visitor states for movement detection
     let isOnline = false;
+    let statsExpanded = false; // Track stats panel state
     
-    // Sound notification function for TV display
-    function playNotificationSound() {
-      try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Pleasant notification sound
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.8);
-        
-        // Second tone for pleasant notification
-        setTimeout(() => {
-          const osc2 = audioContext.createOscillator();
-          const gain2 = audioContext.createGain();
-          osc2.connect(gain2);
-          gain2.connect(audioContext.destination);
-          osc2.frequency.value = 1000;
-          osc2.type = 'sine';
-          gain2.gain.setValueAtTime(0.08, audioContext.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
-          osc2.start(audioContext.currentTime);
-          osc2.stop(audioContext.currentTime + 0.6);
-        }, 200);
-        
-        console.log('🔊 Notification sound played');
-      } catch (error) {
-        console.warn('🔇 Could not play sound:', error);
+    // Global audio context for Fire TV compatibility
+    let audioContext = null;
+    let audioEnabled = false;
+    
+    // Initialize audio context on user interaction (required for Fire TV)
+    function initializeAudio() {
+      if (!audioContext) {
+        try {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          audioEnabled = true;
+          updateAudioStatus('Ready');
+          console.log('🔊 Audio context initialized for Fire TV');
+        } catch (error) {
+          updateAudioStatus('Failed');
+          console.warn('🔇 Could not initialize audio context:', error);
+        }
       }
+    }
+    
+    // Update audio status indicator
+    function updateAudioStatus(status) {
+      const audioStatus = document.getElementById('audioStatus');
+      if (audioStatus) {
+        audioStatus.textContent = status;
+      }
+    }
+    
+    // Sound notification function for TV display - Fire TV compatible
+    function playNotificationSound() {
+      // Initialize audio context if not already done
+      if (!audioContext) {
+        initializeAudio();
+      }
+      
+      // Method 1: Try Web Audio API (preferred)
+      if (audioContext && audioEnabled) {
+        try {
+          // Resume context if suspended (common on Fire TV)
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+          
+          // Create oscillator with Fire TV optimized settings
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Fire TV works better with specific frequencies
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // Louder for TV
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+          
+          console.log('🔊 Fire TV notification sound played (Web Audio)');
+          return; // Success, exit function
+        } catch (error) {
+          console.warn('🔇 Web Audio API failed on Fire TV:', error);
+        }
+      }
+      
+      // Method 2: HTML5 Audio fallback for Fire TV
+      try {
+        // Create a data URL with a simple audio tone
+        const audioData = createAudioDataURL();
+        const audio = new Audio(audioData);
+        audio.volume = 0.5;
+        audio.play().then(() => {
+          console.log('🔊 Fire TV notification sound played (HTML5 Audio)');
+        }).catch(error => {
+          console.warn('🔇 HTML5 Audio failed on Fire TV:', error);
+          // Method 3: Visual notification fallback
+          showVisualNotification();
+        });
+      } catch (error) {
+        console.warn('🔇 HTML5 Audio creation failed:', error);
+        // Method 3: Visual notification fallback
+        showVisualNotification();
+      }
+    }
+    
+    // Create a simple audio data URL (works better on Fire TV)
+    function createAudioDataURL() {
+      // Create a simple WAV file data URL for better Fire TV compatibility
+      const sampleRate = 22050;
+      const duration = 0.5;
+      const frequency = 800;
+      const samples = Math.floor(sampleRate * duration);
+      
+      // Create WAV header
+      const buffer = new ArrayBuffer(44 + samples * 2);
+      const view = new DataView(buffer);
+      
+      // WAV header
+      const writeString = (offset, string) => {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      };
+      
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + samples * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, samples * 2, true);
+      
+      // Generate sine wave samples
+      for (let i = 0; i < samples; i++) {
+        const t = i / sampleRate;
+        const amplitude = Math.sin(2 * Math.PI * frequency * t) * 0.3;
+        const sample = Math.max(-1, Math.min(1, amplitude));
+        view.setInt16(44 + i * 2, sample * 0x7fff, true);
+      }
+      
+      // Convert to data URL
+      const blob = new Blob([buffer], { type: 'audio/wav' });
+      return URL.createObjectURL(blob);
+    }
+    
+    // Visual notification fallback for Fire TV
+    function showVisualNotification() {
+      console.log('� Showing visual notification (audio not available)');
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 193, 7, 0.95);
+        color: #000;
+        padding: 2rem 3rem;
+        border-radius: 20px;
+        font-size: 2rem;
+        font-weight: bold;
+        z-index: 10000;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: pulse 0.5s ease-in-out;
+      `;
+      notification.innerHTML = '🔔 UPDATE!';
+      
+      // Add pulse animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes pulse {
+          0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(notification);
+      
+      // Remove after 2 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+        if (style.parentNode) {
+          style.parentNode.removeChild(style);
+        }
+      }, 2000);
+    }
+    
+    // Create a unique state signature for each visitor to detect changes
+    function createVisitorStateSignature(visitors) {
+      return visitors.map(v => ({
+        id: v.id,
+        room: v.room,
+        status: v.status,
+        tech: v.tech || '',
+        doctor: v.doctor || ''
+      }));
+    }
+    
+    // Check if visitors have moved or changed status
+    function detectVisitorChanges(newVisitors, oldState) {
+      const newState = createVisitorStateSignature(newVisitors);
+      
+      // If this is the first load, don't trigger sounds
+      if (oldState.length === 0) {
+        return { hasNewVisitors: false, hasMovements: false };
+      }
+      
+      // Check for new visitors (new IDs)
+      const oldIds = oldState.map(v => v.id);
+      const newIds = newState.map(v => v.id);
+      const hasNewVisitors = newIds.some(id => !oldIds.includes(id));
+      
+      // Check for movements/changes in existing visitors
+      let hasMovements = false;
+      for (const newVisitor of newState) {
+        const oldVisitor = oldState.find(v => v.id === newVisitor.id);
+        if (oldVisitor) {
+          // Check if room, status, tech, or doctor changed
+          if (oldVisitor.room !== newVisitor.room || 
+              oldVisitor.status !== newVisitor.status ||
+              oldVisitor.tech !== newVisitor.tech ||
+              oldVisitor.doctor !== newVisitor.doctor) {
+            hasMovements = true;
+            break;
+          }
+        }
+      }
+      
+      return { hasNewVisitors, hasMovements };
     }
     
     // Simple XHR function for better TV browser compatibility
@@ -485,14 +677,20 @@
           // Success
           const newVisitors = data || [];
           
-          // Check for visitor count changes and play sound
-          if (previousVisitorCount > 0 && newVisitors.length > previousVisitorCount) {
+          // Detect changes and play appropriate sounds
+          const changes = detectVisitorChanges(newVisitors, previousVisitorState);
+          
+          if (changes.hasNewVisitors) {
             console.log('🔊 New visitor detected, playing notification sound');
+            playNotificationSound();
+          } else if (changes.hasMovements) {
+            console.log('🔊 Visitor movement/change detected, playing notification sound');
             playNotificationSound();
           }
           
           visitors = newVisitors;
           previousVisitorCount = visitors.length;
+          previousVisitorState = createVisitorStateSignature(visitors);
           isOnline = true;
           updateStatus('online', '🟢 Connected');
           updateDisplay();
@@ -512,8 +710,9 @@
             const localData = localStorage.getItem('visitors');
             const newVisitors = localData ? JSON.parse(localData) : [];
             
-            // Initialize previousVisitorCount on first load
-            if (previousVisitorCount === 0) {
+            // Initialize visitor state on first load
+            if (previousVisitorState.length === 0) {
+              previousVisitorState = createVisitorStateSignature(newVisitors);
               previousVisitorCount = newVisitors.length;
             }
             
@@ -564,10 +763,23 @@
     function updateDisplay() {
       const app = document.getElementById('app');
       
+      // Use the same time format as the admin side, but subtract 1 hour
+      const now = new Date();
+      now.setHours(now.getHours() - 1); // Subtract 1 hour
+      const currentTime = now.toLocaleString('en-US', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
+      
       app.innerHTML = `
         <div class="display-screen">
           <h1>🏥 Vet Clinic Room Status</h1>
-          <div class="display-time">${new Date().toLocaleString()}</div>
+          <div class="display-time">${currentTime}</div>
           
           <div class="rooms-display-grid">
             ${[1, 2, 3, 4, 5, 6].map(roomNum => {
@@ -591,6 +803,7 @@
                       <div class="display-visitor">
                         <p class="pet-name">🐾 ${visitor.petName}</p>
                         <p class="owner-name">👤 ${visitor.ownerName}</p>
+                        <p class="arrival-time">⏰ Arrived: ${visitor.timestamp}</p>
                         <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
                         ${visitor.tech ? `<p class="tech-name">🔧 Tech: ${visitor.tech}</p>` : ''}
                         ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
@@ -615,7 +828,7 @@
                 let html = lobbyVisitors.map(visitor => `
                   <div class="lobby-visitor">
                     <div class="lobby-visitor-name">🐾 ${visitor.petName}</div>
-                    <div class="lobby-visitor-time">⏰ ${visitor.timestamp}</div>
+                    <div class="lobby-visitor-time">⏰ Arrived: ${visitor.timestamp}</div>
                   </div>
                 `).join('');
                 
@@ -646,14 +859,19 @@
       const doctorAssigned = visitors.filter(v => v.doctor).length;
       const bothAssigned = visitors.filter(v => v.tech && v.doctor).length;
       
+      // Use the current state to determine if panel should be expanded
+      const panelClass = statsExpanded ? 'stats-panel' : 'stats-panel minimized';
+      const contentDisplay = statsExpanded ? 'block' : 'none';
+      const toggleIcon = statsExpanded ? '▼' : '▶';
+      
       const statsHTML = `
-        <div class="stats-panel minimized" id="statsPanel">
+        <div class="${panelClass}" id="statsPanel">
           <div class="stats-header" onclick="toggleStatsPanel()">
             <span class="stats-title">📊 Dashboard Stats</span>
             <span class="stats-summary">(${totalVisitors} total)</span>
-            <span class="toggle-icon">▶</span>
+            <span class="toggle-icon">${toggleIcon}</span>
           </div>
-          <div class="stats-content" id="statsContent" style="display: none;">
+          <div class="stats-content" id="statsContent" style="display: ${contentDisplay};">
             <div class="stats-item">
               <span class="stats-label">Total Visitors:</span>
               <span class="stats-value">${totalVisitors}</span>
@@ -698,10 +916,12 @@
         panel.classList.remove('minimized');
         content.style.display = 'block';
         icon.textContent = '▼';
+        statsExpanded = true; // Update global state
       } else {
         panel.classList.add('minimized');
         content.style.display = 'none';
         icon.textContent = '▶';
+        statsExpanded = false; // Update global state
       }
     }
 
@@ -758,22 +978,49 @@
       if (e.key === 'Escape') {
         window.location.href = 'index.html';
       }
+      // Test sound with 't' key
+      if (e.key === 't' || e.key === 'T') {
+        console.log('🔊 Testing sound manually...');
+        playNotificationSound();
+      }
     });
     
     // Initialize
     console.log('🏥 TV Dashboard starting...');
     
-    // Initialize visitor count from localStorage to avoid false notifications on startup
+    // Initialize visitor state from localStorage to avoid false notifications on startup
     try {
       const localData = localStorage.getItem('visitors');
       if (localData) {
         const localVisitors = JSON.parse(localData);
         previousVisitorCount = localVisitors.length;
+        previousVisitorState = createVisitorStateSignature(localVisitors);
         console.log('📊 Initialized with', previousVisitorCount, 'visitors from localStorage');
       }
     } catch (e) {
       console.warn('Could not read localStorage on startup:', e);
     }
+    
+    // Initialize audio on any user interaction (required for Fire TV)
+    const enableAudio = () => {
+      initializeAudio();
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('keydown', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    document.addEventListener('click', enableAudio);
+    document.addEventListener('keydown', enableAudio);
+    document.addEventListener('touchstart', enableAudio);
+    
+    // Set initial audio status
+    updateAudioStatus('Waiting for interaction');
+    
+    // Auto-initialize audio after a delay (some Fire TV browsers allow this)
+    setTimeout(() => {
+      if (!audioEnabled) {
+        initializeAudio();
+      }
+    }, 2000);
     
     loadVisitors();
     setInterval(updateTimer, 1000);
