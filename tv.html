@@ -317,6 +317,60 @@
     .doctor-name {
       color: #c084fc !important;
     }
+
+    /* Minimizable Stats Panel for TV */
+    .stats-panel.minimized .stats-content {
+      display: none;
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .stats-header:hover {
+      background-color: rgba(241, 245, 249, 0.8);
+      border-radius: 6px;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .stats-title {
+      font-weight: bold;
+      color: #2d3748;
+      font-size: 0.8rem;
+    }
+
+    .stats-summary {
+      font-size: 0.6rem;
+      color: #68d391;
+      margin-left: 0.5rem;
+    }
+
+    .toggle-icon {
+      font-size: 0.7rem;
+      color: #4a5568;
+      transition: transform 0.2s ease;
+    }
+
+    .stats-content {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* TV-specific stats adjustments */
+    .stats-panel {
+      font-size: 0.75rem !important;
+    }
+
+    .stats-item {
+      margin: 0.15rem 0 !important;
+    }
   </style>
 </head>
 <body>
@@ -537,7 +591,8 @@
                       <div class="display-visitor">
                         <p class="pet-name">🐾 ${visitor.petName}</p>
                         <p class="owner-name">👤 ${visitor.ownerName}</p>
-                        <p class="status-display ${visitor.status}">${getStatusText(visitor.status)}</p>
+                        <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
+                        ${visitor.tech ? `<p class="tech-name">🔧 Tech: ${visitor.tech}</p>` : ''}
                         ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
                       </div>
                     `).join('')
@@ -587,44 +642,100 @@
       const totalVisitors = visitors.length;
       const lobbyCount = visitors.filter(v => v.room === "lobby").length;
       const roomCount = visitors.filter(v => v.room !== "lobby").length;
-      const doctorAssigned = visitors.filter(v => v.status === "dr_assigned").length;
+      const techAssigned = visitors.filter(v => v.tech).length;
+      const doctorAssigned = visitors.filter(v => v.doctor).length;
+      const bothAssigned = visitors.filter(v => v.tech && v.doctor).length;
       
       const statsHTML = `
-        <div class="stats-panel">
-          <h3>📊 Dashboard Stats</h3>
-          <div class="stats-item">
-            <span class="stats-label">Total Visitors:</span>
-            <span class="stats-value">${totalVisitors}</span>
+        <div class="stats-panel minimized" id="statsPanel">
+          <div class="stats-header" onclick="toggleStatsPanel()">
+            <span class="stats-title">📊 Dashboard Stats</span>
+            <span class="stats-summary">(${totalVisitors} total)</span>
+            <span class="toggle-icon">▶</span>
           </div>
-          <div class="stats-item">
-            <span class="stats-label">In Lobby:</span>
-            <span class="stats-value">${lobbyCount}</span>
-          </div>
-          <div class="stats-item">
-            <span class="stats-label">In Rooms:</span>
-            <span class="stats-value">${roomCount}</span>
-          </div>
-          <div class="stats-item">
-            <span class="stats-label">With Doctor:</span>
-            <span class="stats-value">${doctorAssigned}</span>
-          </div>
-          <div class="auto-refresh-indicator">
-            🔄 Auto-refresh active
+          <div class="stats-content" id="statsContent" style="display: none;">
+            <div class="stats-item">
+              <span class="stats-label">Total Visitors:</span>
+              <span class="stats-value">${totalVisitors}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">In Lobby:</span>
+              <span class="stats-value">${lobbyCount}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">In Rooms:</span>
+              <span class="stats-value">${roomCount}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">With Tech:</span>
+              <span class="stats-value">${techAssigned}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">With Doctor:</span>
+              <span class="stats-value">${doctorAssigned}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">Tech + Doctor:</span>
+              <span class="stats-value">${bothAssigned}</span>
+            </div>
+            <div class="auto-refresh-indicator">
+              🔄 Auto-refresh active
+            </div>
           </div>
         </div>
       `;
-      
+
       document.body.insertAdjacentHTML('beforeend', statsHTML);
     }
     
+    // Toggle stats panel
+    function toggleStatsPanel() {
+      const panel = document.getElementById('statsPanel');
+      const content = document.getElementById('statsContent');
+      const icon = panel.querySelector('.toggle-icon');
+      
+      if (panel.classList.contains('minimized')) {
+        panel.classList.remove('minimized');
+        content.style.display = 'block';
+        icon.textContent = '▼';
+      } else {
+        panel.classList.add('minimized');
+        content.style.display = 'none';
+        icon.textContent = '▶';
+      }
+    }
+
     // Get status text
     function getStatusText(status) {
       switch(status) {
         case "waiting_lobby": return "📋 Waiting in Lobby";
         case "waiting_room": return "🚪 Waiting in Room";
+        case "tech_assigned": return "🔧 Tech Assigned";
         case "dr_assigned": return "👩‍⚕️ Doctor Assigned";
         default: return status;
       }
+    }
+
+    // Get display status based on tech and doctor assignments
+    function getDisplayStatus(visitor) {
+      if (visitor.status === "waiting_lobby") {
+        return "📋 Waiting in Lobby";
+      }
+      
+      if (visitor.status === "waiting_room" && !visitor.tech && !visitor.doctor) {
+        return "🚪 Waiting in Room";
+      }
+      
+      // Build status based on assignments
+      let statusParts = [];
+      if (visitor.tech) statusParts.push("🔧 Tech");
+      if (visitor.doctor) statusParts.push("👩‍⚕️ Doctor");
+      
+      if (statusParts.length > 0) {
+        return statusParts.join(" + ") + " Assigned";
+      }
+      
+      return getStatusText(visitor.status);
     }
     
     // Timer function

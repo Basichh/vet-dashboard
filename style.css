@@ -541,3 +541,55 @@ button:hover {
   color: #68d391;
   border-top-color: #4a5568;
 }
+
+/* Minimizable Stats Panel */
+.stats-panel.minimized .stats-content {
+  display: none;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.stats-header:hover {
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+}
+
+.stats-title {
+  font-weight: bold;
+  color: #2d3748;
+}
+
+.stats-summary {
+  font-size: 0.75rem;
+  color: #68d391;
+  margin-left: 0.5rem;
+}
+
+.toggle-icon {
+  font-size: 0.75rem;
+  color: #4a5568;
+  transition: transform 0.2s ease;
+}
+
+.stats-panel.minimized .toggle-icon {
+  transform: rotate(0deg);
+}
+
+.stats-panel:not(.minimized) .toggle-icon {
+  transform: rotate(0deg);
+}
+
+.stats-content {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
