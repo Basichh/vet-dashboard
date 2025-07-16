@@ -18,10 +18,6 @@ Write-Host "   TV Kiosk (local):  http://localhost:8080/kiosk.html"
 Write-Host ""
 Write-Host "📺 For Smart TV access:" -ForegroundColor Magenta
 Write-Host "   Admin:    http://$ip:8080"
-Write-Host "   Display:  http://$ip:8080#display"
-Write-Host "   Kiosk:    http://$ip:8080/kiosk.html"
-Write-Host ""
-Write-Host "💡 Recommended for TV: Use the Kiosk URL for best experience"
 Write-Host ""
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Red
 Write-Host ""
@@ -30,9 +26,28 @@ Write-Host ""
 Set-Location $PSScriptRoot
 
 # Start Python HTTP server
-try {
-    python -m http.server 8080
-} catch {
-    Write-Host "❌ Error: Python not found. Please install Python or use the batch file." -ForegroundColor Red
+Write-Host "🐍 Starting Python server..." -ForegroundColor Green
+
+# Try different Python commands
+$pythonCommands = @("py", "python", "python3")
+$pythonFound = $false
+
+foreach ($cmd in $pythonCommands) {
+    try {
+        $null = & $cmd --version 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   Using '$cmd' command..." -ForegroundColor Yellow
+            & $cmd -m http.server 8080
+            $pythonFound = $true
+            break
+        }
+    } catch {
+        continue
+    }
+}
+
+if (-not $pythonFound) {
+    Write-Host "❌ Error: Python not found! Please install Python or ensure it's in your PATH." -ForegroundColor Red
+    Write-Host "   Tried: py, python, python3" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
 }

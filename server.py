@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print("🏥 Starting Vet Dashboard API Server...")
     print(f"📡 Server running on port {PORT}")
     print(f"🌐 Admin: http://localhost:{PORT}")
-    print(f"📺 Kiosk: http://localhost:{PORT}/kiosk.html")
+    print(f"📺 TV: http://localhost:{PORT}/tv.html")
     print("📊 API endpoints:")
     print(f"   GET  /api/visitors - Get all visitors")
     print(f"   POST /api/visitors - Update visitors")
