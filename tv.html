@@ -810,9 +810,9 @@
     function updateDisplay() {
       const app = document.getElementById('app');
       
-      // Use the same time format as the admin side, but subtract 1 hour
+      
       const now = new Date();
-      now.setHours(now.getHours() - 1); // Subtract 1 hour
+      //now.setHours(now.getHours() - 1); // Subtract 1 hour
       const currentTime = now.toLocaleString('en-US', { 
         weekday: 'short',
         month: 'short', 
