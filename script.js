@@ -61,19 +61,11 @@ function performStartupSync() {
 }
 
 function init() {
-  const hash = window.location.hash;
-
   // Perform startup sync first
   performStartupSync();
-
-  if (hash === "#display") {
-    renderDisplay();
-    setInterval(renderDisplay, 5000); // Refresh every 5 sec
-    // Update time display every second for accuracy
-    setInterval(updateCurrentTimeDisplay, 1000);
-  } else {
-    renderAdmin();
-  }
+  
+  // Always render admin - no display route
+  renderAdmin();
 }
 
 function getVisitors() {
@@ -152,7 +144,7 @@ function renderAdmin() {
 
       <div class="room-management">
         <h2>Room Status</h2>
-        <p class="instruction-text">💡 <strong>Tip:</strong> You can drag patient cards between rooms or use the action buttons</p>
+        <p class="instruction-text">💡 <strong>Tip:</strong> Drag patient cards between rooms or use action buttons</p>
         <div class="rooms-grid" id="roomsGrid"></div>
       </div>
       
@@ -450,7 +442,7 @@ function updateRoomsDisplay() {
       `;
     }).join('');
     
-    // Add or update stats panel
+    // Add stats panel
     let existingStatsPanel = document.querySelector('.stats-panel');
     if (existingStatsPanel) {
       existingStatsPanel.remove();
@@ -597,144 +589,7 @@ function generateStatsPanel(visitors) {
   `;
 }
 
-// --- Track last visitor IDs for display mode (sound moved to tv.html) ---
-let lastVisitorIds = [];
 
-function renderDisplay() {
-  const app = document.getElementById("app");
-  
-  getVisitors().then(visitors => {
-    // --- Track visitor IDs for other purposes (sound now handled in tv.html) ---
-    const currentIds = visitors.map(v => v.id);
-    lastVisitorIds = currentIds;
-    
-    const currentTime = new Date().toLocaleString('en-US', { 
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    });
-    
-    app.innerHTML = `
-      <div class="display-screen">
-        <h1>🏥 Vet Clinic Room Status</h1>
-        <div class="display-time" id="currentTime">${currentTime}</div>
-        
-        <div class="display-container">
-          <div class="rooms-display-grid">
-            ${[1, 2, 3, 4, 5, 6, 7].map(roomNum => {
-              const roomVisitors = visitors.filter(v => v.room == roomNum);
-              const isEmpty = roomVisitors.length === 0;
-              const roomName = roomNames[roomNum] || `Room ${roomNum}`;
-              
-              return `
-                <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
-                  <h3>${roomName}</h3>
-                  ${isEmpty ? 
-                    '<p class="empty-room">Available</p>' : 
-                    roomVisitors.map(visitor => `
-                      <div class="display-visitor">
-                        <p class="pet-name">🐾 ${visitor.petName}</p>
-                        <p class="owner-name">👤 ${visitor.ownerName}</p>
-                        <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
-                        ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}</p>` : ''}
-                        ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
-                      </div>
-                    `).join('')
-                  }
-                </div>
-              `;
-            }).join('')}
-          </div>
-          
-          <div class="special-sections">
-            <div class="special-section pickup-section">
-              <h3>🎁 Waiting for Pickup</h3>
-              <div class="section-content">
-                ${visitors.filter(v => v.room === "pickup").map(visitor => `
-                  <div class="special-visitor">
-                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
-                    ${visitor.pickupNotes ? `<p class="visitor-notes">📝 ${visitor.pickupNotes}</p>` : ''}
-                  </div>
-                `).join('') || '<p class="no-visitors">None waiting</p>'}
-              </div>
-            </div>
-            
-            <div class="special-section kennel-section">
-              <h3>🏠 Kenneled Dogs</h3>
-              <div class="section-content">
-                ${visitors.filter(v => v.room === "kennel").map(visitor => `
-                  <div class="special-visitor">
-                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
-                    ${visitor.kennelNotes ? `<p class="visitor-notes">📝 ${visitor.kennelNotes}</p>` : ''}
-                  </div>
-                `).join('') || '<p class="no-visitors">None kenneled</p>'}
-              </div>
-            </div>
-            
-            <div class="special-section surgery-section">
-              <h3>⚕️ Surgery Room</h3>
-              <div class="section-content">
-                ${visitors.filter(v => v.room === "surgery").map(visitor => `
-                  <div class="special-visitor">
-                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
-                    ${visitor.surgeryNotes ? `<p class="visitor-notes">📝 ${visitor.surgeryNotes}</p>` : ''}
-                  </div>
-                `).join('') || '<p class="no-visitors">No surgeries</p>'}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="lobby-display">
-          <h3>🪑 Lobby</h3>
-          <div class="lobby-visitors">
-            ${visitors.filter(v => v.room === "lobby").map(visitor => `
-              <div class="lobby-visitor">
-                <span>🐾 ${visitor.petName} (${visitor.ownerName})</span>
-                <span class="wait-time">⏰ ${visitor.timestamp}</span>
-              </div>
-            `).join('') || '<p class="no-visitors">No one waiting in lobby</p>'}
-          </div>
-        </div>
-        
-        <div class="admin-link">
-          <a href="index.html">Return to Admin</a>
-        </div>
-      </div>
-    `;
-    
-    // Add stats panel to display mode
-    let existingStatsPanel = document.querySelector('.stats-panel');
-    if (existingStatsPanel) {
-      existingStatsPanel.remove();
-    }
-    document.body.insertAdjacentHTML('beforeend', generateStatsPanel(visitors));
-    
-    // Update the current time every second
-    updateCurrentTimeDisplay();
-  });
-}
-
-// Function to update just the time display without re-rendering everything
-function updateCurrentTimeDisplay() {
-  const timeElement = document.getElementById('currentTime');
-  if (timeElement) {
-    const currentTime = new Date().toLocaleString('en-US', { 
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    });
-    timeElement.textContent = currentTime;
-  }
-}
 
 // Make functions globally accessible
 window.addVisitor = addVisitor;

@@ -403,59 +403,7 @@
       z-index: 2000;
     }
     
-    /* Stats Panel for TV Display */
-    .stats-panel {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 2px solid #4a5568;
-      border-radius: 12px;
-      padding: 0.8rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-      min-width: 180px;
-      z-index: 1000;
-      color: #f7fafc;
-    }
 
-    .stats-panel h3 {
-      margin: 0 0 0.4rem 0;
-      color: #f7fafc;
-      font-size: 0.9rem;
-      text-align: center;
-      border-bottom: 1px solid #4a5568;
-      padding-bottom: 0.4rem;
-    }
-
-    .stats-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 0.2rem 0;
-      font-size: 0.75rem;
-    }
-
-    .stats-label {
-      color: #a0aec0;
-    }
-
-    .stats-value {
-      font-weight: bold;
-      color: #f7fafc;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-    }
-
-    .auto-refresh-indicator {
-      text-align: center;
-      font-size: 0.65rem;
-      color: #68d391;
-      margin-top: 0.4rem;
-      padding-top: 0.4rem;
-      border-top: 1px solid #4a5568;
-    }
     
     /* Updated color scheme for doctor assigned status */
     .status-display.dr_assigned {
@@ -467,59 +415,7 @@
       color: #c084fc !important;
     }
 
-    /* Minimizable Stats Panel for TV */
-    .stats-panel.minimized .stats-content {
-      display: none;
-    }
 
-    .stats-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      padding: 0.25rem 0;
-      user-select: none;
-      transition: background-color 0.2s ease;
-    }
-
-    .stats-header:hover {
-      background-color: rgba(241, 245, 249, 0.8);
-      border-radius: 6px;
-      padding: 0.25rem 0.5rem;
-    }
-
-    .stats-title {
-      font-weight: bold;
-      color: #2d3748;
-      font-size: 0.8rem;
-    }
-
-    .stats-summary {
-      font-size: 0.6rem;
-      color: #68d391;
-      margin-left: 0.5rem;
-    }
-
-    .toggle-icon {
-      font-size: 0.7rem;
-      color: #4a5568;
-      transition: transform 0.2s ease;
-    }
-
-    .stats-content {
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    /* TV-specific stats adjustments */
-    .stats-panel {
-      font-size: 0.75rem !important;
-    }
-
-    .stats-item {
-      margin: 0.15rem 0 !important;
-    }
   </style>
 </head>
 <body>
@@ -553,7 +449,6 @@
     let previousVisitorCount = 0;
     let previousVisitorState = []; // Track visitor states for movement detection
     let isOnline = false;
-    let statsExpanded = false; // Track stats panel state
     
     // Global audio context for Fire TV compatibility
     let audioContext = null;
@@ -1031,91 +926,9 @@
         </div>
       `;
       
-      // Add stats panel
-      updateStatsPanel();
+      // Update display
     }
-    
-    // Generate and update stats panel
-    function updateStatsPanel() {
-      // Remove existing stats panel
-      const existingStatsPanel = document.querySelector('.stats-panel');
-      if (existingStatsPanel) {
-        existingStatsPanel.remove();
-      }
-      
-      // Generate stats
-      const totalVisitors = visitors.length;
-      const lobbyCount = visitors.filter(v => v.room === "lobby").length;
-      const roomCount = visitors.filter(v => v.room !== "lobby").length;
-      const techAssigned = visitors.filter(v => v.tech).length;
-      const doctorAssigned = visitors.filter(v => v.doctor).length;
-      const bothAssigned = visitors.filter(v => v.tech && v.doctor).length;
-      
-      // Use the current state to determine if panel should be expanded
-      const panelClass = statsExpanded ? 'stats-panel' : 'stats-panel minimized';
-      const contentDisplay = statsExpanded ? 'block' : 'none';
-      const toggleIcon = statsExpanded ? '▼' : '▶';
-      
-      const statsHTML = `
-        <div class="${panelClass}" id="statsPanel">
-          <div class="stats-header" onclick="toggleStatsPanel()">
-            <span class="stats-title">📊 Dashboard Stats</span>
-            <span class="stats-summary">(${totalVisitors} total)</span>
-            <span class="toggle-icon">${toggleIcon}</span>
-          </div>
-          <div class="stats-content" id="statsContent" style="display: ${contentDisplay};">
-            <div class="stats-item">
-              <span class="stats-label">Total Visitors:</span>
-              <span class="stats-value">${totalVisitors}</span>
-            </div>
-            <div class="stats-item">
-              <span class="stats-label">In Lobby:</span>
-              <span class="stats-value">${lobbyCount}</span>
-            </div>
-            <div class="stats-item">
-              <span class="stats-label">In Rooms:</span>
-              <span class="stats-value">${roomCount}</span>
-            </div>
-            <div class="stats-item">
-              <span class="stats-label">With Tech:</span>
-              <span class="stats-value">${techAssigned}</span>
-            </div>
-            <div class="stats-item">
-              <span class="stats-label">With Doctor:</span>
-              <span class="stats-value">${doctorAssigned}</span>
-            </div>
-            <div class="stats-item">
-              <span class="stats-label">Tech + Doctor:</span>
-              <span class="stats-value">${bothAssigned}</span>
-            </div>
-            <div class="auto-refresh-indicator">
-              🔄 Auto-refresh active
-            </div>
-          </div>
-        </div>
-      `;
 
-      document.body.insertAdjacentHTML('beforeend', statsHTML);
-    }
-    
-    // Toggle stats panel
-    function toggleStatsPanel() {
-      const panel = document.getElementById('statsPanel');
-      const content = document.getElementById('statsContent');
-      const icon = panel.querySelector('.toggle-icon');
-      
-      if (panel.classList.contains('minimized')) {
-        panel.classList.remove('minimized');
-        content.style.display = 'block';
-        icon.textContent = '▼';
-        statsExpanded = true; // Update global state
-      } else {
-        panel.classList.add('minimized');
-        content.style.display = 'none';
-        icon.textContent = '▶';
-        statsExpanded = false; // Update global state
-      }
-    }
 
     // Get status text
     function getStatusText(status) {
