@@ -84,7 +84,7 @@
     
     .rooms-display-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3 columns */
+      grid-template-columns: repeat(4, 1fr); /* 4 columns for 7 rooms */
       grid-template-rows: repeat(2, 1fr); /* 2 rows */
       gap: 0.2rem;
       min-height: 0;
@@ -759,6 +759,17 @@
       }, 3000);
     }
     
+    // Room name mapping
+    const roomNames = {
+      1: 'Preston',
+      2: 'Charles', 
+      3: 'Rusty',
+      4: 'Moosh',
+      5: 'Caleb',
+      6: 'Clifford',
+      7: 'Lorie'
+    };
+    
     // Update the display
     function updateDisplay() {
       const app = document.getElementById('app');
@@ -782,7 +793,7 @@
           <div class="display-time">${currentTime}</div>
           
           <div class="rooms-display-grid">
-            ${[1, 2, 3, 4, 5, 6].map(roomNum => {
+            ${[1, 2, 3, 4, 5, 6, 7].map(roomNum => {
               const roomVisitors = visitors.filter(v => v.room == roomNum);
               const isEmpty = roomVisitors.length === 0;
               
@@ -796,7 +807,7 @@
               
               return `
                 <div class="display-room-card ${roomStatus}">
-                  <h2>Room ${roomNum}</h2>
+                  <h2>${roomNames[roomNum] || `Room ${roomNum}`}</h2>
                   ${isEmpty ? 
                     '<p class="empty-room">Available</p>' : 
                     roomVisitors.map(visitor => `

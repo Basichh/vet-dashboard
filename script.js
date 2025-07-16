@@ -134,12 +134,13 @@ function renderAdmin() {
           <input id="ownerName" placeholder="Owner Name" />
           <select id="roomSelect">
             <option value="">Select Room</option>
-            <option value="1">Room 1</option>
-            <option value="2">Room 2</option>
-            <option value="3">Room 3</option>
-            <option value="4">Room 4</option>
-            <option value="5">Room 5</option>
-            <option value="6">Room 6</option>
+            <option value="1">Preston</option>
+            <option value="2">Charles</option>
+            <option value="3">Rusty</option>
+            <option value="4">Moosh</option>
+            <option value="5">Caleb</option>
+            <option value="6">Clifford</option>
+            <option value="7">Lorie</option>
             <option value="lobby">Lobby</option>
           </select>
           <button onclick="addVisitor()">Add Visitor</button>
@@ -318,13 +319,24 @@ function updateRoomsDisplay() {
   const roomsGrid = document.getElementById("roomsGrid");
   if (!roomsGrid) return;
   
+  // Room name mapping
+  const roomNames = {
+    1: 'Preston',
+    2: 'Charles', 
+    3: 'Rusty',
+    4: 'Moosh',
+    5: 'Caleb',
+    6: 'Clifford',
+    7: 'Lorie'
+  };
+  
   getVisitors().then(visitors => {
-    // Create room cards for rooms 1-6 plus lobby
-    const rooms = ["lobby", "1", "2", "3", "4", "5", "6"];
+    // Create room cards for rooms 1-7 plus lobby
+    const rooms = ["lobby", "1", "2", "3", "4", "5", "6", "7"];
     
     roomsGrid.innerHTML = rooms.map(roomId => {
       const roomVisitors = visitors.filter(v => v.room === roomId);
-      const roomName = roomId === "lobby" ? "Lobby" : `Room ${roomId}`;
+      const roomName = roomId === "lobby" ? "Lobby" : (roomNames[roomId] || `Room ${roomId}`);
       
       return `
         <div class="room-card ${roomVisitors.length > 0 ? 'occupied' : 'empty'}" 
