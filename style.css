@@ -83,8 +83,8 @@ button:hover {
 /* Room Grid Styles */
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.2rem;
   margin: 2rem 0;
 }
 
@@ -92,9 +92,9 @@ button:hover {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.2rem;
   transition: all 0.3s ease;
-  min-height: 200px;
+  min-height: 180px;
 }
 
 .room-card.occupied {
@@ -592,4 +592,215 @@ button:hover {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid #e2e8f0;
+}
+
+/* Special Sections Styles */
+.special-section {
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.section-pickup {
+  background: linear-gradient(135deg, #fef7cd, #fbbf24);
+  border: 2px solid #f59e0b;
+}
+
+.section-kennel {
+  background: linear-gradient(135deg, #dcfce7, #4ade80);
+  border: 2px solid #22c55e;
+}
+
+.section-surgery {
+  background: linear-gradient(135deg, #fce7f3, #ec4899);
+  border: 2px solid #e91e63;
+}
+
+.special-section h3 {
+  color: #374151;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Notes styling */
+.notes {
+  font-style: italic;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Button styles for special sections */
+.btn-pickup {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin: 0.2rem;
+}
+
+.btn-pickup:hover {
+  background: #d97706;
+}
+
+.btn-kennel {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin: 0.2rem;
+}
+
+.btn-kennel:hover {
+  background: #16a34a;
+}
+
+.btn-surgery {
+  background: #e91e63;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin: 0.2rem;
+}
+
+.btn-surgery:hover {
+  background: #be185d;
+}
+
+.btn-notes {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin: 0.2rem;
+}
+
+.btn-notes:hover {
+  background: #4b5563;
+}
+
+/* TV Display Updates */
+.display-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.rooms-display-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.2rem;
+}
+
+.display-room-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid #4a5568;
+  border-radius: 12px;
+  padding: 1.2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.display-room-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+  color: #e2e8f0;
+}
+
+.special-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.special-section {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.special-section h3 {
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.special-visitor {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.6rem;
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+
+.pickup-section .special-visitor {
+  border-left-color: #f59e0b;
+}
+
+.kennel-section .special-visitor {
+  border-left-color: #22c55e;
+}
+
+.surgery-section .special-visitor {
+  border-left-color: #e91e63;
+}
+
+.visitor-name {
+  color: #f7fafc;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.visitor-notes {
+  color: #cbd5e0;
+  font-size: 0.8rem;
+  margin: 0.3rem 0 0 0;
+  font-style: italic;
+}
+
+.lobby-display {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.lobby-display h3 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .display-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .special-sections {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .special-section {
+    flex: 1;
+    min-width: 250px;
+  }
 }

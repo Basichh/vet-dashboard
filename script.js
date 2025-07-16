@@ -142,6 +142,9 @@ function renderAdmin() {
             <option value="6">Clifford</option>
             <option value="7">Lorie</option>
             <option value="lobby">Lobby</option>
+            <option value="pickup">Waiting for Pickup</option>
+            <option value="kennel">Kenneled</option>
+            <option value="surgery">Surgery Room</option>
           </select>
           <button onclick="addVisitor()">Add Visitor</button>
         </div>
@@ -176,24 +179,39 @@ function addVisitor() {
     return;
   }
 
+  function getInitialStatus(room) {
+    switch(room) {
+      case "pickup": return "ready_pickup";
+      case "kennel": return "kenneled";
+      case "surgery": return "in_surgery";
+      case "lobby": 
+      case "": return "waiting_lobby";
+      default: return "waiting_room";
+    }
+  }
+
   getVisitors().then(visitors => {
     console.log('📊 Current visitors before adding:', visitors.length);
     
-    const newVisitor = {
-      id: Date.now(),
-      petName,
-      ownerName,
-      room: roomSelect || "lobby",
-      status: roomSelect === "lobby" || !roomSelect ? "waiting_lobby" : "waiting_room",
-      doctor: "",
-      tech: "",
-      timestamp: new Date().toLocaleTimeString('en-US', { 
-        hour12: true, 
-        hour: 'numeric', 
-        minute: '2-digit',
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      })
-    };
+  const newVisitor = {
+    id: Date.now(),
+    petName,
+    ownerName,
+    room: roomSelect || "lobby",
+    status: getInitialStatus(roomSelect),
+    doctor: "",
+    tech: "",
+    timestamp: new Date().toLocaleTimeString('en-US', { 
+      hour12: true, 
+      hour: 'numeric', 
+      minute: '2-digit',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }),
+    // New fields for extended functionality
+    pickupNotes: "",
+    kennelNotes: "",
+    surgeryNotes: ""
+  };
 
     console.log('👤 Creating new visitor:', newVisitor);
     visitors.push(newVisitor);
@@ -269,13 +287,19 @@ function moveVisitorToRoom(id, roomNumber) {
     
     if (!visitor) return;
     
+    // Handle special sections
+    if (['pickup', 'kennel', 'surgery'].includes(roomNumber)) {
+      moveVisitorToSpecialSection(id, roomNumber);
+      return;
+    }
+    
     // If moving to a numbered room, check if it's valid
-    if (roomNumber !== "lobby" && (roomNumber < 1 || roomNumber > 6)) {
+    if (roomNumber !== "lobby" && (roomNumber < 1 || roomNumber > 7)) {
       alert("Invalid room number");
       return;
     }
     
-    // Check if room is already occupied (except lobby)
+    // Check if room is already occupied (except lobby and special sections)
     if (roomNumber !== "lobby") {
       const roomOccupied = visitors.some(v => v.room == roomNumber && v.id !== id);
       if (roomOccupied) {
@@ -327,24 +351,29 @@ function updateRoomsDisplay() {
     4: 'Moosh',
     5: 'Caleb',
     6: 'Clifford',
-    7: 'Lorie'
+    7: 'Lorie',
+    pickup: 'Waiting for Pickup',
+    kennel: 'Kenneled Dogs',
+    surgery: 'Surgery Room'
   };
   
   getVisitors().then(visitors => {
-    // Create room cards for rooms 1-7 plus lobby
-    const rooms = ["lobby", "1", "2", "3", "4", "5", "6", "7"];
+    // Create room cards for rooms 1-7, lobby, plus special sections
+    const rooms = ["lobby", "1", "2", "3", "4", "5", "6", "7", "pickup", "kennel", "surgery"];
     
     roomsGrid.innerHTML = rooms.map(roomId => {
       const roomVisitors = visitors.filter(v => v.room === roomId);
       const roomName = roomId === "lobby" ? "Lobby" : (roomNames[roomId] || `Room ${roomId}`);
+      const isSpecialSection = ['pickup', 'kennel', 'surgery'].includes(roomId);
+      const specialClass = isSpecialSection ? `special-section section-${roomId}` : '';
       
       return `
-        <div class="room-card ${roomVisitors.length > 0 ? 'occupied' : 'empty'}" 
+        <div class="room-card ${roomVisitors.length > 0 ? 'occupied' : 'empty'} ${specialClass}" 
              data-room="${roomId}"
              ondrop="dropVisitor(event)" 
              ondragover="allowDrop(event)">
           <h3>${roomName}</h3>
-          <div class="visitor-count">${roomVisitors.length} visitor(s)</div>
+          <div class="visitor-count">${roomVisitors.length} ${isSpecialSection ? (roomId === 'pickup' ? 'waiting' : roomId === 'kennel' ? 'kenneled' : 'in surgery') : 'visitor(s)'}</div>
           
           ${roomVisitors.map(visitor => `
             <div class="visitor-info status-${visitor.status}" 
@@ -358,6 +387,9 @@ function updateRoomsDisplay() {
                 <small>⏰ ${visitor.timestamp}</small>
                 ${visitor.tech ? `<br><span class="tech">🔧 Tech: ${visitor.tech}</span>` : ''}
                 ${visitor.doctor ? `<br><span class="doctor">👩‍⚕️ Dr. ${visitor.doctor}</span>` : ''}
+                ${visitor.pickupNotes ? `<br><span class="notes">📝 Pickup: ${visitor.pickupNotes}</span>` : ''}
+                ${visitor.kennelNotes ? `<br><span class="notes">📝 Kennel: ${visitor.kennelNotes}</span>` : ''}
+                ${visitor.surgeryNotes ? `<br><span class="notes">📝 Surgery: ${visitor.surgeryNotes}</span>` : ''}
               </div>
               
               <div class="status-badge status-${visitor.status}">
@@ -385,7 +417,28 @@ function updateRoomsDisplay() {
                   `}
                 ` : ''}
                 
-                ${(visitor.tech || visitor.doctor) ? `
+                ${(visitor.tech || visitor.doctor) && !['pickup', 'kennel', 'surgery'].includes(visitor.room) ? `
+                  <button onclick="moveVisitorToSpecialSection(${visitor.id}, 'pickup')" class="btn-pickup">Mark for Pickup</button>
+                  <button onclick="moveVisitorToSpecialSection(${visitor.id}, 'kennel')" class="btn-kennel">Move to Kennel</button>
+                  <button onclick="moveVisitorToSpecialSection(${visitor.id}, 'surgery')" class="btn-surgery">Move to Surgery</button>
+                ` : ''}
+                
+                ${visitor.room === 'pickup' ? `
+                  <button onclick="addPickupNotes(${visitor.id})" class="btn-notes">Add Pickup Notes</button>
+                  <button onclick="removeVisitor(${visitor.id})" class="btn-complete">Owner Picked Up</button>
+                ` : ''}
+                
+                ${visitor.room === 'kennel' ? `
+                  <button onclick="addKennelNotes(${visitor.id})" class="btn-notes">Add Kennel Notes</button>
+                  <button onclick="moveVisitorToRoom(${visitor.id}, 'lobby')" class="btn-move">Return to Lobby</button>
+                ` : ''}
+                
+                ${visitor.room === 'surgery' ? `
+                  <button onclick="addSurgeryNotes(${visitor.id})" class="btn-notes">Add Surgery Notes</button>
+                  <button onclick="moveVisitorToSpecialSection(${visitor.id}, 'pickup')" class="btn-complete">Surgery Complete</button>
+                ` : ''}
+                
+                ${(visitor.tech || visitor.doctor) && !['pickup', 'kennel', 'surgery'].includes(visitor.room) ? `
                   <button onclick="removeVisitor(${visitor.id})" class="btn-complete">Complete Visit</button>
                 ` : ''}
                 
@@ -484,7 +537,10 @@ function clearAllVisitors() {
 function generateStatsPanel(visitors) {
   const totalVisitors = visitors.length;
   const lobbyCount = visitors.filter(v => v.room === "lobby").length;
-  const roomCount = visitors.filter(v => v.room !== "lobby").length;
+  const roomCount = visitors.filter(v => v.room !== "lobby" && !['pickup', 'kennel', 'surgery'].includes(v.room)).length;
+  const pickupCount = visitors.filter(v => v.room === "pickup").length;
+  const kennelCount = visitors.filter(v => v.room === "kennel").length;
+  const surgeryCount = visitors.filter(v => v.room === "surgery").length;
   const techAssigned = visitors.filter(v => v.tech).length;
   const doctorAssigned = visitors.filter(v => v.doctor).length;
   const bothAssigned = visitors.filter(v => v.tech && v.doctor).length;
@@ -508,6 +564,18 @@ function generateStatsPanel(visitors) {
         <div class="stats-item">
           <span class="stats-label">In Rooms:</span>
           <span class="stats-value">${roomCount}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">Waiting Pickup:</span>
+          <span class="stats-value">${pickupCount}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">Kenneled:</span>
+          <span class="stats-value">${kennelCount}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">In Surgery:</span>
+          <span class="stats-value">${surgeryCount}</span>
         </div>
         <div class="stats-item">
           <span class="stats-label">With Tech:</span>
@@ -555,33 +623,74 @@ function renderDisplay() {
         <h1>🏥 Vet Clinic Room Status</h1>
         <div class="display-time" id="currentTime">${currentTime}</div>
         
-        <div class="rooms-display-grid">
-          ${[1, 2, 3, 4, 5, 6].map(roomNum => {
-            const roomVisitors = visitors.filter(v => v.room == roomNum);
-            const isEmpty = roomVisitors.length === 0;
-            
-            return `
-              <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
-                <h2>Room ${roomNum}</h2>
-                ${isEmpty ? 
-                  '<p class="empty-room">Available</p>' : 
-                  roomVisitors.map(visitor => `
-                    <div class="display-visitor">
-                      <p class="pet-name">🐾 ${visitor.petName}</p>
-                      <p class="owner-name">👤 ${visitor.ownerName}</p>
-                      <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
-                      ${visitor.tech ? `<p class="tech-name">🔧 Tech: ${visitor.tech}</p>` : ''}
-                      ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
-                    </div>
-                  `).join('')
-                }
+        <div class="display-container">
+          <div class="rooms-display-grid">
+            ${[1, 2, 3, 4, 5, 6, 7].map(roomNum => {
+              const roomVisitors = visitors.filter(v => v.room == roomNum);
+              const isEmpty = roomVisitors.length === 0;
+              const roomName = roomNames[roomNum] || `Room ${roomNum}`;
+              
+              return `
+                <div class="display-room-card ${isEmpty ? 'empty' : 'occupied'}">
+                  <h3>${roomName}</h3>
+                  ${isEmpty ? 
+                    '<p class="empty-room">Available</p>' : 
+                    roomVisitors.map(visitor => `
+                      <div class="display-visitor">
+                        <p class="pet-name">🐾 ${visitor.petName}</p>
+                        <p class="owner-name">👤 ${visitor.ownerName}</p>
+                        <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
+                        ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}</p>` : ''}
+                        ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
+                      </div>
+                    `).join('')
+                  }
+                </div>
+              `;
+            }).join('')}
+          </div>
+          
+          <div class="special-sections">
+            <div class="special-section pickup-section">
+              <h3>🎁 Waiting for Pickup</h3>
+              <div class="section-content">
+                ${visitors.filter(v => v.room === "pickup").map(visitor => `
+                  <div class="special-visitor">
+                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                    ${visitor.pickupNotes ? `<p class="visitor-notes">📝 ${visitor.pickupNotes}</p>` : ''}
+                  </div>
+                `).join('') || '<p class="no-visitors">None waiting</p>'}
               </div>
-            `;
-          }).join('')}
+            </div>
+            
+            <div class="special-section kennel-section">
+              <h3>🏠 Kenneled Dogs</h3>
+              <div class="section-content">
+                ${visitors.filter(v => v.room === "kennel").map(visitor => `
+                  <div class="special-visitor">
+                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                    ${visitor.kennelNotes ? `<p class="visitor-notes">📝 ${visitor.kennelNotes}</p>` : ''}
+                  </div>
+                `).join('') || '<p class="no-visitors">None kenneled</p>'}
+              </div>
+            </div>
+            
+            <div class="special-section surgery-section">
+              <h3>⚕️ Surgery Room</h3>
+              <div class="section-content">
+                ${visitors.filter(v => v.room === "surgery").map(visitor => `
+                  <div class="special-visitor">
+                    <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                    ${visitor.surgeryNotes ? `<p class="visitor-notes">📝 ${visitor.surgeryNotes}</p>` : ''}
+                  </div>
+                `).join('') || '<p class="no-visitors">No surgeries</p>'}
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="lobby-display">
-          <h2>🪑 Lobby</h2>
+          <h3>🪑 Lobby</h3>
           <div class="lobby-visitors">
             ${visitors.filter(v => v.room === "lobby").map(visitor => `
               <div class="lobby-visitor">
@@ -646,6 +755,10 @@ window.assignTech = assignTech;
 window.assignDoctor = assignDoctor;
 window.removeTech = removeTech;
 window.removeDoctor = removeDoctor;
+window.moveVisitorToSpecialSection = moveVisitorToSpecialSection;
+window.addPickupNotes = addPickupNotes;
+window.addKennelNotes = addKennelNotes;
+window.addSurgeryNotes = addSurgeryNotes;
 
 window.onload = init;
 
@@ -717,6 +830,18 @@ function getDisplayStatus(visitor) {
     return "📋 Waiting in Lobby";
   }
   
+  if (visitor.status === "ready_pickup") {
+    return "🎁 Ready for Pickup";
+  }
+  
+  if (visitor.status === "kenneled") {
+    return "🏠 Kenneled";
+  }
+  
+  if (visitor.status === "in_surgery") {
+    return "⚕️ In Surgery";
+  }
+  
   if (visitor.status === "waiting_room" && !visitor.tech && !visitor.doctor) {
     return "🚪 Waiting in Room";
   }
@@ -747,4 +872,75 @@ function toggleStatsPanel() {
     content.style.display = 'none';
     icon.textContent = '▶';
   }
+}
+
+// New functions for special sections
+function moveVisitorToSpecialSection(id, section) {
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    if (!visitor) return;
+    
+    visitor.room = section;
+    
+    // Update status based on section
+    if (section === 'pickup') {
+      visitor.status = 'ready_pickup';
+    } else if (section === 'kennel') {
+      visitor.status = 'kenneled';
+    } else if (section === 'surgery') {
+      visitor.status = 'in_surgery';
+    }
+    
+    saveVisitors(visitors).then(() => {
+      updateRoomsDisplay();
+    });
+  });
+}
+
+function addPickupNotes(id) {
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    if (!visitor) return;
+    
+    const notes = prompt("Add pickup notes:", visitor.pickupNotes || "");
+    if (notes !== null) {
+      visitor.pickupNotes = notes.trim();
+      
+      saveVisitors(visitors).then(() => {
+        updateRoomsDisplay();
+      });
+    }
+  });
+}
+
+function addKennelNotes(id) {
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    if (!visitor) return;
+    
+    const notes = prompt("Add kennel notes:", visitor.kennelNotes || "");
+    if (notes !== null) {
+      visitor.kennelNotes = notes.trim();
+      
+      saveVisitors(visitors).then(() => {
+        updateRoomsDisplay();
+      });
+    }
+  });
+}
+
+function addSurgeryNotes(id) {
+  getVisitors().then(visitors => {
+    const visitor = visitors.find(v => v.id === id);
+    if (!visitor) return;
+    
+    const notes = prompt("Add surgery notes:", visitor.surgeryNotes || "");
+    if (notes !== null) {
+      visitor.surgeryNotes = notes.trim();
+      
+      saveVisitors(visitors).then(() => {
+        updateRoomsDisplay();
+      });
+    }
+  });
 }

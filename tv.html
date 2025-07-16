@@ -59,7 +59,7 @@
       height: 100%;
       padding: 0.1rem;
       display: grid;
-      grid-template-columns: 3fr 1fr; /* Rooms take 3/4, lobby takes 1/4 */
+      grid-template-columns: 1fr;
       grid-template-rows: auto auto 1fr;
       gap: 0.2rem;
       overflow: hidden;
@@ -82,23 +82,34 @@
       flex-shrink: 0;
     }
     
+    /* TV display container */
+    .display-container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: 2fr 1fr;
+      gap: 0.5rem;
+      height: 100%;
+      overflow: hidden;
+    }
+    
     .rooms-display-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr); /* 4 columns for 7 rooms */
-      grid-template-rows: repeat(2, 1fr); /* 2 rows */
-      gap: 0.2rem;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.3rem;
       min-height: 0;
     }
     
     .display-room-card { 
-      padding: 0.2rem !important;
+      padding: 0.3rem !important;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       min-height: 0;
       width: 100%;
       height: 100%;
-      border: 3px solid;
+      border: 2px solid;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
     }
     
     /* Status-based border colors for room cards */
@@ -114,9 +125,9 @@
       border-color: #c084fc; /* Purple for doctor assigned */
     }
     
-    .display-room-card h2 { 
-      font-size: clamp(1rem, 2.5vw, 1.5rem) !important; /* Reduced from 3x */
-      margin: 0 0 0.1rem 0 !important;
+    .display-room-card h3 { 
+      font-size: clamp(0.8rem, 2vw, 1.2rem) !important;
+      margin: 0 0 0.2rem 0 !important;
       text-align: center;
       flex-shrink: 0;
     }
@@ -237,6 +248,136 @@
       align-items: center;
       justify-content: center;
       height: 100%;
+    }
+    
+    /* Special Sections for TV Display */
+    .special-sections {
+      display: flex;
+      flex-direction: row;
+      gap: 0.5rem;
+      overflow-x: auto;
+      grid-column: 1 / -1;
+      padding: 0.3rem 0;
+    }
+    
+    .special-section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.5rem;
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      min-width: 200px;
+      flex: 1;
+    }
+    
+    .special-section h3 {
+      color: #e2e8f0;
+      font-size: clamp(0.8rem, 2vw, 1.1rem);
+      margin: 0 0 0.4rem 0;
+      text-align: center;
+    }
+    
+    .section-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    
+    .special-visitor {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.3rem;
+      border-radius: 4px;
+      border-left: 3px solid;
+    }
+    
+    .pickup-section .special-visitor {
+      border-left-color: #f59e0b;
+    }
+    
+    .kennel-section .special-visitor {
+      border-left-color: #22c55e;
+    }
+    
+    .surgery-section .special-visitor {
+      border-left-color: #e91e63;
+    }
+    
+    .visitor-name {
+      color: #f7fafc;
+      font-weight: bold;
+      font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    }
+    
+    .visitor-notes {
+      color: #cbd5e0;
+      font-size: clamp(0.5rem, 1.3vw, 0.7rem);
+      margin: 0.2rem 0 0 0;
+      font-style: italic;
+    }
+    
+    /* Lobby display adjustments for new layout */
+    .lobby-display {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 0.5rem !important;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+    
+    .lobby-display h3 {
+      font-size: clamp(0.9rem, 2.2vw, 1.3rem) !important;
+      margin: 0 0 0.3rem 0 !important;
+      text-align: center;
+      color: #e2e8f0;
+    }
+    
+    /* Responsive adjustments for TV */
+    @media (max-width: 1200px) {
+      .display-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+      
+      .special-sections {
+        flex-direction: row;
+        overflow-x: auto;
+      }
+      
+      .special-section {
+        min-width: 200px;
+      }
+      
+      .lobby-display {
+        order: 3;
+      }
+    }
+    
+    /* Fire TV specific fixes */
+    @supports (display: grid) {
+      .display-container {
+        display: grid !important;
+        grid-template-columns: 2fr 1fr !important;
+        grid-template-rows: 2fr 1fr !important;
+        grid-template-areas: 
+          "rooms lobby"
+          "special special" !important;
+      }
+      
+      .rooms-display-grid {
+        grid-area: rooms;
+      }
+      
+      .special-sections {
+        grid-area: special;
+      }
+      
+      .lobby-display {
+        grid-area: lobby !important;
+      }
     }
     
     .lobby-overflow {
@@ -792,61 +933,101 @@
           <h1>🏥 Vet Clinic Room Status</h1>
           <div class="display-time">${currentTime}</div>
           
-          <div class="rooms-display-grid">
-            ${[1, 2, 3, 4, 5, 6, 7].map(roomNum => {
-              const roomVisitors = visitors.filter(v => v.room == roomNum);
-              const isEmpty = roomVisitors.length === 0;
-              
-              // Determine room status based on visitors
-              let roomStatus = 'empty';
-              if (!isEmpty) {
-                // Check if any visitor has doctor assigned
-                const hasDoctorAssigned = roomVisitors.some(v => v.status === 'dr_assigned');
-                roomStatus = hasDoctorAssigned ? 'status-dr_assigned' : 'status-waiting_room';
-              }
-              
-              return `
-                <div class="display-room-card ${roomStatus}">
-                  <h2>${roomNames[roomNum] || `Room ${roomNum}`}</h2>
-                  ${isEmpty ? 
-                    '<p class="empty-room">Available</p>' : 
-                    roomVisitors.map(visitor => `
-                      <div class="display-visitor">
-                        <p class="pet-name">🐾 ${visitor.petName}</p>
-                        <p class="owner-name">👤 ${visitor.ownerName}</p>
-                        <p class="arrival-time">⏰ Arrived: ${visitor.timestamp}</p>
-                        <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
-                        ${visitor.tech ? `<p class="tech-name">🔧 Tech: ${visitor.tech}</p>` : ''}
-                        ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
-                      </div>
-                    `).join('')
-                  }
-                </div>
-              `;
-            }).join('')}
-          </div>
-          
-          <div class="lobby-display">
-            <h2>🪑 Lobby</h2>
-            <div class="lobby-visitors">
-              ${(() => {
-                const lobbyVisitors = visitors.filter(v => v.room === "lobby");
-                if (lobbyVisitors.length === 0) {
-                  return '<div class="no-visitors">No one waiting in lobby</div>';
+          <div class="display-container">
+            <div class="rooms-display-grid">
+              ${[1, 2, 3, 4, 5, 6, 7].map(roomNum => {
+                const roomVisitors = visitors.filter(v => v.room == roomNum);
+                const isEmpty = roomVisitors.length === 0;
+                
+                // Determine room status based on visitors
+                let roomStatus = 'empty';
+                if (!isEmpty) {
+                  // Check if any visitor has doctor assigned
+                  const hasDoctorAssigned = roomVisitors.some(v => v.status === 'dr_assigned');
+                  roomStatus = hasDoctorAssigned ? 'status-dr_assigned' : 'status-waiting_room';
                 }
                 
-                // Show all visitors in a scrollable list
-                let html = lobbyVisitors.map(visitor => `
-                  <div class="lobby-visitor">
-                    <div class="lobby-visitor-name">🐾 ${visitor.petName}</div>
-                    <div class="lobby-visitor-time">⏰ Arrived: ${visitor.timestamp}</div>
+                return `
+                  <div class="display-room-card ${roomStatus}">
+                    <h3>${roomNames[roomNum] || `Room ${roomNum}`}</h3>
+                    ${isEmpty ? 
+                      '<p class="empty-room">Available</p>' : 
+                      roomVisitors.map(visitor => `
+                        <div class="display-visitor">
+                          <p class="pet-name">🐾 ${visitor.petName}</p>
+                          <p class="owner-name">👤 ${visitor.ownerName}</p>
+                          <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
+                          ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}</p>` : ''}
+                          ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
+                        </div>
+                      `).join('')
+                    }
                   </div>
-                `).join('');
-                
-                return html;
-              })()}
+                `;
+              }).join('')}
+            </div>
+            
+            <div class="special-sections">
+              <div class="special-section pickup-section">
+                <h3>🎁 Waiting for Pickup</h3>
+                <div class="section-content">
+                  ${visitors.filter(v => v.room === "pickup").map(visitor => `
+                    <div class="special-visitor">
+                      <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                      ${visitor.pickupNotes ? `<p class="visitor-notes">� ${visitor.pickupNotes}</p>` : ''}
+                    </div>
+                  `).join('') || '<p class="no-visitors">None waiting</p>'}
+                </div>
+              </div>
+              
+              <div class="special-section kennel-section">
+                <h3>🏠 Kenneled Dogs</h3>
+                <div class="section-content">
+                  ${visitors.filter(v => v.room === "kennel").map(visitor => `
+                    <div class="special-visitor">
+                      <span class="visitor-name">� ${visitor.petName} (${visitor.ownerName})</span>
+                      ${visitor.kennelNotes ? `<p class="visitor-notes">📝 ${visitor.kennelNotes}</p>` : ''}
+                    </div>
+                  `).join('') || '<p class="no-visitors">None kenneled</p>'}
+                </div>
+              </div>
+              
+              <div class="special-section surgery-section">
+                <h3>⚕️ Surgery Room</h3>
+                <div class="section-content">
+                  ${visitors.filter(v => v.room === "surgery").map(visitor => `
+                    <div class="special-visitor">
+                      <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
+                      ${visitor.surgeryNotes ? `<p class="visitor-notes">📝 ${visitor.surgeryNotes}</p>` : ''}
+                    </div>
+                  `).join('') || '<p class="no-visitors">No surgeries</p>'}
+                </div>
+              </div>
+            </div>
+            
+            <div class="lobby-display">
+              <h3>🪑 Lobby</h3>
+              <div class="lobby-visitors">
+                ${(() => {
+                  const lobbyVisitors = visitors.filter(v => v.room === "lobby");
+                  if (lobbyVisitors.length === 0) {
+                    return '<div class="no-visitors">No one waiting in lobby</div>';
+                  }
+                  
+                  // Show all visitors in a scrollable list
+                  let html = lobbyVisitors.map(visitor => `
+                    <div class="lobby-visitor">
+                      <div class="lobby-visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</div>
+                      <div class="lobby-visitor-time">⏰ Arrived: ${visitor.timestamp}</div>
+                    </div>
+                  `).join('');
+                  
+                  return html;
+                })()}
+              </div>
             </div>
           </div>
+          
         </div>
       `;
       
@@ -951,6 +1132,18 @@
     function getDisplayStatus(visitor) {
       if (visitor.status === "waiting_lobby") {
         return "📋 Waiting in Lobby";
+      }
+      
+      if (visitor.status === "ready_pickup") {
+        return "🎁 Ready for Pickup";
+      }
+      
+      if (visitor.status === "kenneled") {
+        return "🏠 Kenneled";
+      }
+      
+      if (visitor.status === "in_surgery") {
+        return "⚕️ In Surgery";
       }
       
       if (visitor.status === "waiting_room" && !visitor.tech && !visitor.doctor) {
