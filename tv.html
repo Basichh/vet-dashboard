@@ -258,16 +258,24 @@
       overflow-x: auto;
       grid-column: 1 / -1;
       padding: 0.3rem 0;
+      align-items: stretch; /* Ensure all children are same height */
     }
-    
     .special-section {
       background: rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       padding: 0.5rem;
       backdrop-filter: blur(10px);
-      flex-shrink: 0;
-      min-width: 200px;
-      flex: 1;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      min-width: 0;
+      min-height: 180px; /* Ensures consistent height */
+      max-height: 220px;
+      height: 100%;
+      box-sizing: border-box;
+      overflow: hidden; /* Prevent scrollbars */
     }
     
     .special-section h3 {
@@ -278,9 +286,19 @@
     }
     
     .section-content {
-      display: flex;
+      display: flex !important;
       flex-direction: column;
+      flex: 1 1 0;
+      justify-content: center;
+      align-items: center;
       gap: 0.3rem;
+      overflow: hidden !important; /* Remove scrollbars */
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0;
     }
     
     .special-visitor {
@@ -415,14 +433,102 @@
       color: #c084fc !important;
     }
 
+    .kennel-section .section-content {
+      display: flex !important;
+      flex-direction: column;
+      flex: 1 1 0;
+      justify-content: center;
+      align-items: center;
+      gap: 0.3rem;
+      overflow: hidden !important;
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0;
+    }
+    .kennel-section .special-visitor {
+      padding: 2px 2px !important;
+      min-width: 0;
+      min-height: 0;
+      border-radius: 4px;
+      font-size: clamp(0.48rem, 1vw, 0.7rem);
+      line-height: 1.1;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(200,200,200,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin: 0 !important;
+      box-sizing: border-box;
+      overflow: hidden;
+      max-width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .kennel-section .visitor-name {
+      font-size: clamp(0.55rem, 1.2vw, 0.85rem);
+      margin: 0 !important;
+      font-weight: 600;
+      color: #e2e8f0;
+      text-align: center;
+      word-break: break-word;
+    }
+    .kennel-section .visitor-notes {
+      font-size: clamp(0.38rem, 0.8vw, 0.6rem);
+      margin: 0 !important;
+      color: #cbd5e0;
+      text-align: center;
+      font-style: italic;
+      word-break: break-word;
+    }
+    .kennel-section.special-section {
+      overflow: hidden;
+      box-sizing: border-box;
+      height: 100%;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .no-visitors {
+      width: 100%;
+    }
+    .special-section .no-visitors {
+      color: #e2e8f0;
+      font-size: clamp(0.7rem, 1.8vw, 1rem) !important;
+      margin: 0.2rem 0 0 0 !important;
+      text-align: center;
+      width: 100%;
+      background: none;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 100px;
+    }
+    .kennel-section .section-content.kennel-has-pets {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 0.3rem;
+      justify-items: stretch;
+      align-items: stretch;
+      overflow: hidden;
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0;
+    }
+
 
   </style>
 </head>
 <body>
   <div class="tv-controls">
-    <div>🔄 Auto-refresh: <span id="refreshTimer">3</span>s</div>
-    <div>📺 TV Display Mode</div>
-    <div>🌐 Status: <span id="apiStatus">Connecting...</span></div>
+    <div>🔄 Auto-refresh: <span id="refreshTimer">15</span>s</div>
   </div>
   
   <div class="connection-status status-loading" id="connectionStatus">
@@ -431,7 +537,6 @@
   
   <div id="app">
     <div class="display-screen">
-      <h1>🏥 Vet Clinic Room Status</h1>
       <div class="display-time">Loading...</div>
       <div class="rooms-display-grid">
         <div class="display-room-card empty">
@@ -774,11 +879,12 @@
     // Update connection status
     function updateStatus(type, message) {
       const status = document.getElementById('connectionStatus');
-      const apiStatus = document.getElementById('apiStatus');
+      // const apiStatus = document.getElementById('apiStatus');
       
       status.className = 'connection-status status-' + type;
       status.textContent = message;
-      apiStatus.textContent = type === 'online' ? 'API' : type === 'offline' ? 'Local' : 'Loading';
+      // Only update apiStatus if it exists (for compatibility)
+      // if (apiStatus) apiStatus.textContent = type === 'online' ? 'API' : type === 'offline' ? 'Local' : 'Loading';
     }
     
     // Show error message
@@ -829,7 +935,6 @@
       
       app.innerHTML = `
         <div class="display-screen">
-          <h1>🏥 Vet Clinic Room Status</h1>
           <div class="display-time">${currentTime}</div>
           
           <div class="display-container">
@@ -879,10 +984,10 @@
               
               <div class="special-section kennel-section">
                 <h3>🏠 Kenneled Dogs</h3>
-                <div class="section-content">
-                  ${visitors.filter(v => v.room === "kennel").map(visitor => `
+                <div class="section-content${visitors.filter(v => v.room === "kennel").length > 0 ? ' kennel-has-pets' : ''}">
+                  ${visitors.filter(v => v.room === "kennel").slice(0,8).map(visitor => `
                     <div class="special-visitor">
-                      <span class="visitor-name">� ${visitor.petName} (${visitor.ownerName})</span>
+                      <span class="visitor-name">🐾 ${visitor.petName} (${visitor.ownerName})</span>
                       ${visitor.kennelNotes ? `<p class="visitor-notes">📝 ${visitor.kennelNotes}</p>` : ''}
                     </div>
                   `).join('') || '<p class="no-visitors">None kenneled</p>'}
