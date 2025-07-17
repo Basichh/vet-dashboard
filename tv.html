@@ -856,8 +856,6 @@
                           <p class="pet-name">🐾 ${visitor.petName}</p>
                           <p class="owner-name">👤 ${visitor.ownerName}</p>
                           <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
-                          ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}${visitor.techAssignedTime ? ` <small>(${visitor.techAssignedTime})</small>` : ''}</p>` : ''}
-                          ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}${visitor.doctorAssignedTime ? ` <small>(${visitor.doctorAssignedTime})</small>` : ''}</p>` : ''}
                         </div>
                       `).join('')
                     }
@@ -950,32 +948,33 @@
       if (visitor.status === "waiting_lobby") {
         return "📋 Waiting in Lobby";
       }
-      
       if (visitor.status === "ready_pickup") {
         return "🎁 Ready for Pickup";
       }
-      
       if (visitor.status === "kenneled") {
         return "🏠 Kenneled";
       }
-      
       if (visitor.status === "in_surgery") {
         return "⚕️ In Surgery";
       }
-      
       if (visitor.status === "waiting_room" && !visitor.tech && !visitor.doctor) {
         return "🚪 Waiting in Room";
       }
-      
-      // Build status based on assignments
-      let statusParts = [];
-      if (visitor.tech) statusParts.push("🔧 Tech");
-      if (visitor.doctor) statusParts.push("👩‍⚕️ Doctor");
-      
-      if (statusParts.length > 0) {
-        return statusParts.join(" + ") + " Assigned";
+      // Show tech and doctor with times if present, on separate lines
+      let parts = [];
+      if (visitor.tech) {
+        let techStr = `🔧 ${visitor.tech}`;
+        if (visitor.techAssignedTime) techStr += ` (${visitor.techAssignedTime})`;
+        parts.push(techStr);
       }
-      
+      if (visitor.doctor) {
+        let drStr = `👩‍⚕️ Dr. ${visitor.doctor}`;
+        if (visitor.doctorAssignedTime) drStr += ` (${visitor.doctorAssignedTime})`;
+        parts.push(drStr);
+      }
+      if (parts.length > 0) {
+        return parts.join('<br>');
+      }
       return getStatusText(visitor.status);
     }
     

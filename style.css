@@ -276,7 +276,6 @@ button:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  margin-bottom: 3rem;
 }
 
 .display-room-card {
@@ -312,7 +311,6 @@ button:hover {
 }
 
 .display-visitor {
-  margin-bottom: 1rem;
 }
 
 .pet-name {
@@ -877,4 +875,43 @@ button:hover {
   .visitor-info {
     padding: 0.6rem;
   }
+}
+
+/* Compact TV display for tech/doctor/timestamp info */
+.display-room-card .tech-name,
+.display-room-card .doctor-name {
+  font-size: 0.85rem;
+  margin: 0.1rem 0 0.1rem 0;
+  color: #e2e8f0;
+  font-weight: 500;
+  line-height: 1.1;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display-room-card .status-display {
+  font-size: 0.85rem;
+  margin: 0.2rem 0;
+  padding: 0.3rem;
+}
+
+.display-room-card .timestamp,
+.display-room-card .assigned-time,
+.display-room-card small {
+  font-size: 0.7rem;
+  color: #a0aec0;
+  margin-left: 0.2rem;
+  vertical-align: middle;
+}
+
+.display-room-card .pet-name {
+  font-size: 1.1rem;
+  margin: 0.2rem 0;
+}
+
+.display-room-card .owner-name {
+  font-size: 0.95rem;
+  margin: 0.1rem 0 0.2rem 0;
 }
