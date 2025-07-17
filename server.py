@@ -16,54 +16,41 @@ class VetDashboardHandler(http.server.SimpleHTTPRequestHandler):
     visitors_cache_mtime = None
 
     def do_GET(self):
-        # Log all requests for debugging
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] GET {self.path} from {self.client_address[0]}")
-        
+        # Only log errors
         if self.path == '/api/visitors':
             visitors = self.get_visitors()
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending {len(visitors)} visitors to {self.client_address[0]}")
             self.send_json_response(visitors)
         elif self.path == '/api/sync-localStorage':
-            # Special endpoint for syncing localStorage to server
             self.send_json_response({"message": "Send localStorage data via POST"})
         elif self.path.startswith('/api/'):
             self.send_error(404, "API endpoint not found")
         else:
-            # Serve static files (HTML, CSS, JS)
             super().do_GET()
     
     def do_POST(self):
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] POST {self.path} from {self.client_address[0]}")
-        
         if self.path == '/api/visitors':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             try:
                 visitors = json.loads(post_data.decode('utf-8'))
                 self.save_visitors(visitors)
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Saved {len(visitors)} visitors from {self.client_address[0]}")
                 self.send_json_response({"status": "success", "message": "Visitors updated", "count": len(visitors)})
             except Exception as e:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Error saving data: {e}")
+                print(f"[ERROR] Saving data: {e}")
                 self.send_error(400, f"Invalid JSON data: {str(e)}")
         elif self.path == '/api/sync-localStorage':
-            # Handle localStorage sync
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             try:
                 localStorage_data = json.loads(post_data.decode('utf-8'))
                 current_server_data = self.get_visitors()
-                
                 if len(current_server_data) == 0 and len(localStorage_data) > 0:
-                    # Server empty, localStorage has data - sync it
                     self.save_visitors(localStorage_data)
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Auto-synced {len(localStorage_data)} visitors from localStorage")
                     self.send_json_response({"status": "synced", "message": f"Synced {len(localStorage_data)} visitors", "count": len(localStorage_data)})
                 else:
-                    # Server has data or localStorage empty - no sync needed
                     self.send_json_response({"status": "no-sync", "message": "No sync needed", "count": len(current_server_data)})
             except Exception as e:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Error syncing localStorage: {e}")
+                print(f"[ERROR] Syncing localStorage: {e}")
                 self.send_error(400, f"Invalid sync data: {str(e)}")
         else:
             self.send_error(404, "API endpoint not found")

@@ -22,6 +22,9 @@ echo.
 echo Opening admin panel in 3 seconds...
 echo Press Ctrl+C to stop the server
 echo.
+echo NOTE: For long-running servers, consider running as a Windows service
+echo to avoid CMD window performance issues over time.
+echo.
 
 REM Start the server in background
 cd /d "%~dp0"
