@@ -12,6 +12,9 @@ import urllib.parse
 from datetime import datetime
 
 class VetDashboardHandler(http.server.SimpleHTTPRequestHandler):
+    visitors_cache = None
+    visitors_cache_mtime = None
+
     def do_GET(self):
         # Log all requests for debugging
         print(f"[{datetime.now().strftime('%H:%M:%S')}] GET {self.path} from {self.client_address[0]}")
@@ -66,28 +69,38 @@ class VetDashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, "API endpoint not found")
     
     def get_visitors(self):
-        """Load visitors from data.json file, with localStorage backup migration"""
+        """Load visitors from data.json file, with in-memory caching"""
         try:
-            if os.path.exists('data.json'):
-                with open('data.json', 'r') as f:
+            file_path = 'data.json'
+            if os.path.exists(file_path):
+                mtime = os.path.getmtime(file_path)
+                if (self.__class__.visitors_cache is not None and
+                    self.__class__.visitors_cache_mtime == mtime):
+                    return self.__class__.visitors_cache
+                with open(file_path, 'r') as f:
                     data = json.load(f)
-                    if data:  # If file has data, use it
+                    if data:
+                        self.__class__.visitors_cache = data
+                        self.__class__.visitors_cache_mtime = mtime
                         return data
-            
-            # If data.json is empty or doesn't exist, try to load from a backup
-            # This helps with initial setup when users have localStorage data
+            # If data.json is empty or doesn't exist
             print(f"[{datetime.now().strftime('%H:%M:%S')}] data.json is empty, initializing with empty array")
+            self.__class__.visitors_cache = []
+            self.__class__.visitors_cache_mtime = None
             return []
-            
         except Exception as e:
             print(f"Error reading data.json: {e}")
+            self.__class__.visitors_cache = []
+            self.__class__.visitors_cache_mtime = None
             return []
-    
+
     def save_visitors(self, visitors):
-        """Save visitors to data.json file"""
+        """Save visitors to data.json file and update cache"""
         try:
             with open('data.json', 'w') as f:
                 json.dump(visitors, f, indent=2)
+            self.__class__.visitors_cache = visitors
+            self.__class__.visitors_cache_mtime = os.path.getmtime('data.json')
             print(f"[{datetime.now().strftime('%H:%M:%S')}] Saved {len(visitors)} visitors")
         except Exception as e:
             print(f"Error saving data.json: {e}")
@@ -140,4 +153,4 @@ if __name__ == "__main__":
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\n🛑 Server stopped")
+            print("\n�� Server stopped")

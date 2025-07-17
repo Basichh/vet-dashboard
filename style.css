@@ -802,6 +802,31 @@ button:hover {
   color: #e2e8f0;
 }
 
+/* Special section header color fix for admin dashboard */
+.section-pickup h3,
+.section-kennel h3,
+.section-surgery h3 {
+  color: #2d3748 !important;
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+/* Optionally, make the special-section text less gray overall */
+.section-pickup,
+.section-kennel,
+.section-surgery {
+  color: #2d3748;
+}
+
+/* Fix: Ensure special-section headers in admin use the same color as room headers */
+.admin-container .special-section h3 {
+  color: #2d3748 !important;
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .display-container {

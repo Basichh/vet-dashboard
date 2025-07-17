@@ -444,7 +444,7 @@
   
   <script>
     // TV-compatible dashboard with better error handling
-    let refreshTimer = 3;
+    let refreshTimer = 15;
     let visitors = [];
     let previousVisitorCount = 0;
     let previousVisitorState = []; // Track visitor states for movement detection
@@ -634,7 +634,9 @@
         room: v.room,
         status: v.status,
         tech: v.tech || '',
-        doctor: v.doctor || ''
+        doctor: v.doctor || '',
+        techAssignedTime: v.techAssignedTime || '',
+        doctorAssignedTime: v.doctorAssignedTime || ''
       }));
     }
     
@@ -661,7 +663,9 @@
           if (oldVisitor.room !== newVisitor.room || 
               oldVisitor.status !== newVisitor.status ||
               oldVisitor.tech !== newVisitor.tech ||
-              oldVisitor.doctor !== newVisitor.doctor) {
+              oldVisitor.doctor !== newVisitor.doctor ||
+              oldVisitor.techAssignedTime !== newVisitor.techAssignedTime ||
+              oldVisitor.doctorAssignedTime !== newVisitor.doctorAssignedTime) {
             hasMovements = true;
             break;
           }
@@ -852,8 +856,8 @@
                           <p class="pet-name">🐾 ${visitor.petName}</p>
                           <p class="owner-name">👤 ${visitor.ownerName}</p>
                           <p class="status-display ${visitor.status}">${getDisplayStatus(visitor)}</p>
-                          ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}</p>` : ''}
-                          ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}</p>` : ''}
+                          ${visitor.tech ? `<p class="tech-name">🔧 ${visitor.tech}${visitor.techAssignedTime ? ` <small>(${visitor.techAssignedTime})</small>` : ''}</p>` : ''}
+                          ${visitor.doctor ? `<p class="doctor-name">👩‍⚕️ Dr. ${visitor.doctor}${visitor.doctorAssignedTime ? ` <small>(${visitor.doctorAssignedTime})</small>` : ''}</p>` : ''}
                         </div>
                       `).join('')
                     }
@@ -982,7 +986,7 @@
       
       if (refreshTimer < 0) {
         loadVisitors();
-        refreshTimer = 3; // Refresh every 3 seconds
+        refreshTimer = 15; // Refresh every 15 seconds
       }
     }
     
@@ -990,7 +994,7 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'r' || e.key === 'R') {
         loadVisitors();
-        refreshTimer = 3;
+        refreshTimer = 15;
       }
       if (e.key === 'Escape') {
         window.location.href = 'index.html';

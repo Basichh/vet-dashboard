@@ -199,7 +199,8 @@ function addVisitor() {
       minute: '2-digit',
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     }),
-    // New fields for extended functionality
+    techAssignedTime: "",
+    doctorAssignedTime: "",
     pickupNotes: "",
     kennelNotes: "",
     surgeryNotes: ""
@@ -377,8 +378,8 @@ function updateRoomsDisplay() {
                 <strong>🐾 ${visitor.petName}</strong><br>
                 <span>👤 ${visitor.ownerName}</span><br>
                 <small>⏰ ${visitor.timestamp}</small>
-                ${visitor.tech ? `<br><span class="tech">🔧 Tech: ${visitor.tech}</span>` : ''}
-                ${visitor.doctor ? `<br><span class="doctor">👩‍⚕️ Dr. ${visitor.doctor}</span>` : ''}
+                ${visitor.tech ? `<br><span class="tech">🔧 Tech: ${visitor.tech}${visitor.techAssignedTime ? ` <small>(${visitor.techAssignedTime})</small>` : ''}</span>` : ''}
+                ${visitor.doctor ? `<br><span class="doctor">👩‍⚕️ Dr. ${visitor.doctor}${visitor.doctorAssignedTime ? ` <small>(${visitor.doctorAssignedTime})</small>` : ''}</span>` : ''}
                 ${visitor.pickupNotes ? `<br><span class="notes">📝 Pickup: ${visitor.pickupNotes}</span>` : ''}
                 ${visitor.kennelNotes ? `<br><span class="notes">📝 Kennel: ${visitor.kennelNotes}</span>` : ''}
                 ${visitor.surgeryNotes ? `<br><span class="notes">📝 Surgery: ${visitor.surgeryNotes}</span>` : ''}
@@ -628,6 +629,7 @@ function assignTech(id) {
     if (!techName) return;
     
     visitor.tech = techName.trim();
+    visitor.techAssignedTime = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
     
     saveVisitors(visitors).then(() => {
       updateRoomsDisplay();
@@ -645,6 +647,7 @@ function assignDoctor(id) {
     if (!doctorName) return;
     
     visitor.doctor = doctorName.trim();
+    visitor.doctorAssignedTime = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
     
     saveVisitors(visitors).then(() => {
       updateRoomsDisplay();
@@ -659,6 +662,7 @@ function removeTech(id) {
     if (!visitor) return;
     
     visitor.tech = "";
+    visitor.techAssignedTime = "";
     
     saveVisitors(visitors).then(() => {
       updateRoomsDisplay();
@@ -673,6 +677,7 @@ function removeDoctor(id) {
     if (!visitor) return;
     
     visitor.doctor = "";
+    visitor.doctorAssignedTime = "";
     
     saveVisitors(visitors).then(() => {
       updateRoomsDisplay();
